@@ -1,9 +1,9 @@
 {
-  "name": "gatsby-starter-default",
+  "name": "prm-practice-migration-dashboard",
   "private": true,
-  "description": "A simple starter to get up and developing quickly with Gatsby",
+  "description": "A dashboard for practice migration data",
   "version": "0.1.0",
-  "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+  "author": "",
   "dependencies": {
     "@types/react": "^17.0.39",
     "@types/react-dom": "^17.0.11",
