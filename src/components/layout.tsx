@@ -7,7 +7,7 @@
 
 import * as React from "react"
 import PropTypes from "prop-types"
-import { useStaticQuery, graphql } from "gatsby"
+import {useStaticQuery, graphql} from "gatsby"
 
 import Header from "./header"
 import "./layout.scss"
@@ -17,8 +17,8 @@ interface LayoutProps {
     children: ReactNode;
 }
 
-const Layout : FC<LayoutProps> = ({ children }) => {
-  const data = useStaticQuery(graphql`
+const Layout: FC<LayoutProps> = ({children}) => {
+    const data = useStaticQuery(graphql`
     query SiteTitleQuery {
       site {
         siteMetadata {
@@ -28,33 +28,37 @@ const Layout : FC<LayoutProps> = ({ children }) => {
     }
   `)
 
-  return (
-    <>
-      <Header siteTitle={data.site.siteMetadata?.title || `Title`} />
-      <div
-        style={{
-          margin: `0 auto`,
-          maxWidth: 960,
-          padding: `0 1.0875rem 1.45rem`,
-        }}
-      >
-        <main>{children}</main>
-        <footer
-          style={{
-            marginTop: `2rem`,
-          }}
-        >
-          © {new Date().getFullYear()}, Built with
-          {` `}
-          <a href="https://www.gatsbyjs.com">Gatsby</a>
-        </footer>
-      </div>
-    </>
-  )
+    return (
+        <>
+            <Header siteTitle={data.site.siteMetadata?.title || `Title`}/>
+            <div
+                style={{
+                    margin: `0 auto`,
+                    maxWidth: 960,
+                    padding: `0 1.0875rem 1.45rem`,
+                }}
+            >
+                <main className="nhsuk-main-wrapper app-homepage" id="maincontent">
+                    <section className="app-homepage-content">
+                        <div className="nhsuk-width-container">{children}</div>
+                    </section>
+                </main>
+                <footer
+                    style={{
+                        marginTop: `2rem`,
+                    }}
+                >
+                    © {new Date().getFullYear()}, Built with
+                    {` `}
+                    <a href="https://www.gatsbyjs.com">Gatsby</a>
+                </footer>
+            </div>
+        </>
+    )
 }
 
 Layout.propTypes = {
-  children: PropTypes.node.isRequired,
+    children: PropTypes.node.isRequired,
 }
 
 export default Layout
