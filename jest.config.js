@@ -14,4 +14,5 @@ module.exports = {
     // setupFilesAfterEnv: ["<rootDir>/setup-test-env.js"],
     clearMocks: true,
     preset: "ts-jest",
+    moduleFileExtensions: ['js', 'ts', 'tsx']
 };
