@@ -26,6 +26,10 @@
     "sass": "^1.49.7"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.2",
+    "@testing-library/react": "^12.1.2",
+    "@types/jest": "^27.4.0",
+    "jest": "^27.5.1",
     "prettier": "^2.5.1"
   },
   "keywords": [
