@@ -18,9 +18,6 @@ const Layout: FC<LayoutProps> = ({ children }) => {
   //     }
   //   }
   // `)
-  const data = {
-    site: { siteMetadata: { title: "blah" } },
-  };
 
   return (
     <>
