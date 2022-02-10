@@ -1,6 +1,6 @@
 import * as React from "react";
 
-// import Header from "./header"
+import Header from "./header";
 import "./layout.scss";
 import { FC, ReactNode } from "react";
 
@@ -24,7 +24,7 @@ const Layout: FC<LayoutProps> = ({ children }) => {
 
   return (
     <>
-      {/*<Header siteTitle={data.site.siteMetadata?.title || `Title`}/>*/}
+      <Header />
       <div
         style={{
           margin: `0 auto`,
