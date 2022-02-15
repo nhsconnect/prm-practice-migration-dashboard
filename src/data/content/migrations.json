@@ -1,0 +1,11 @@
+[
+  {
+    "cutover_startdate": "01/01/2022",
+    "cutover_enddate": "12/02/2022",
+    "practice_name": "Bury",
+    "ccg_name": "Greater Manchester",
+    "source_system": "EMIS Web",
+    "target_system": "TTP SystemOne",
+    "cutover_duration": 12
+  }
+]
