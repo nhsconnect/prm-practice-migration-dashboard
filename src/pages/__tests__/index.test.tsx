@@ -4,17 +4,19 @@ import { render, screen } from "@testing-library/react";
 import IndexPage from "../index";
 
 jest.mock(
-    "../../data/content/migrations.json",
-    () => ([{
-      "cutover_startdate": "01/01/2022",
-      "cutover_enddate": "12/01/2022",
-      "practice_name": "Bury",
-      "ccg_name": "Greater Manchester",
-      "source_system": "EMIS Web",
-      "target_system": "TTP SystemOne",
-      "cutover_duration": 12
-    }]),
-    { virtual: true }
+  "../../data/content/migrations.json",
+  () => [
+    {
+      cutover_startdate: "2022-01-01T02:03:04Z",
+      cutover_enddate: "2022-01-12T04:03:02Z",
+      practice_name: "Bury",
+      ccg_name: "Greater Manchester",
+      source_system: "EMIS Web",
+      target_system: "TTP SystemOne",
+      cutover_duration: 12,
+    },
+  ],
+  { virtual: true }
 );
 
 it("renders a table", () => {
@@ -28,7 +30,6 @@ it("renders a table", () => {
   expect(screen.queryByText("Target System")).toBeTruthy();
   expect(screen.queryByText("Cutover Duration (Days)")).toBeTruthy();
 
-  console.log(screen.debug());
   expect(screen.queryByText("01/01/2022")).toBeTruthy();
   expect(screen.queryByText("12/01/2022")).toBeTruthy();
   expect(screen.queryByText("Bury")).toBeTruthy();
