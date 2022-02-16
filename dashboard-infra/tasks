@@ -1,0 +1,104 @@
+#!/bin/bash
+
+set -Eeo pipefail
+
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 TASK STACK STACK-ENVIRONMENT"
+  exit 1
+fi
+
+task="$1"
+stack_name="$2"
+stack_env="$3"
+state_region="eu-west-2"
+tf_dir=stacks/${stack_name}/terraform
+env_name=$(jq -r .${stack_env}.name environment.json)
+state_lock_table=$(jq -r .${stack_env}.dynamo_table environment.json)
+state_bucket=$(jq -r .${stack_env}.bucket_name environment.json)
+s3_state_key=$(jq -r .${stack_env}.state_key_prefix environment.json)${stack_name}/terraform.tfstate
+
+echo "Terraform state stored in s3://${state_bucket}/${s3_state_key}"
+
+function assume_role() {
+  role_arn_param=$(jq -r .${stack_env}.role_arn_param environment.json)
+  if [ "$role_arn_param" != "null" ]; then
+    role_arn=$(aws ssm get-parameters --region ${state_region} --names ${role_arn_param} --query 'Parameters[0].Value' --output text)
+
+    if [ -z "$role_arn" ]
+    then
+      echo "role_arn not found"
+      exit
+    fi
+
+    session_name="pracmig-dashboard-${env_name}-session"
+
+    sts=$(
+      aws sts assume-role \
+        --role-arn $role_arn \
+        --role-session-name $session_name \
+        --output json
+    )
+
+    export AWS_ACCESS_KEY_ID=$(echo $sts | jq -r .Credentials.AccessKeyId)
+    export AWS_SECRET_ACCESS_KEY=$(echo $sts | jq -r .Credentials.SecretAccessKey)
+    export AWS_SESSION_TOKEN=$(echo $sts | jq -r .Credentials.SessionToken)
+  fi
+
+}
+
+export TF_DATA_DIR=.terraform/${stack_env}/${stack_name}
+
+function tf_init() {
+  assume_role
+  terraform init \
+    -backend-config key=${s3_state_key} \
+    -backend-config bucket=${state_bucket} \
+    -backend-config dynamodb_table=${state_lock_table} \
+    -backend-config region=${state_region} \
+    ${tf_dir}
+}
+
+echo "--- ${task} ---"
+case "${task}" in
+validate)
+  tf_init
+  terraform validate ${tf_dir}
+  ;;
+dojo-validate)
+  dojo "./tasks validate ${stack_name} ${stack_env}"
+  ;;
+plan)
+  tf_init
+  terraform plan -var environment=$env_name \
+    -var-file=stacks/${stack_name}/vars/${stack_env}.tfvars \
+    -out=${stack_env}.tfplan ${tf_dir}
+  ;;
+dojo-plan)
+  dojo "./tasks plan ${stack_name} ${stack_env}"
+  ;;
+apply)
+  tf_init
+  terraform apply ${stack_env}.tfplan
+  ;;
+dojo-apply)
+  dojo "./tasks apply ${stack_name} ${stack_env}"
+  ;;
+format)
+  terraform fmt stacks/${stack_name}/terraform
+  ;;
+destroy)
+  tf_init
+  terraform destroy -var environment=$env_name \
+    -var-file=stacks/${stack_name}/vars/${stack_env}.tfvars \
+    ${tf_dir}
+  ;;
+dojo-destroy)
+  dojo "./tasks destroy ${stack_name} ${stack_env}"
+  ;;
+*)
+  echo "Invalid task: '${task}'"
+  exit 1
+  ;;
+esac
+
+set +e

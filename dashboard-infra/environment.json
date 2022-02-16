@@ -1,0 +1,9 @@
+{
+  "dev": {
+    "name": "dev",
+    "bucket_name": "prm-pracmig-terraform-state-dev",
+    "dynamo_table": "prm-pracmig-terraform-table",
+    "role_arn_param" : "/pracmig/dev/user-input/cross-account-admin-role",
+    "state_key_prefix": "data-pipeline/"
+  }
+}
