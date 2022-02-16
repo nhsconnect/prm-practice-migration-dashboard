@@ -38,3 +38,10 @@ it("renders a table", () => {
   expect(screen.queryByText("TTP SystemOne")).toBeTruthy();
   expect(screen.queryByText("12")).toBeTruthy();
 });
+
+it("handles missing fields", () => {
+  const missingFields = [{}];
+  render(<MigrationStatsTable migrationStats={missingFields} />);
+
+  expect(screen.queryAllByText("—")).toHaveLength(7);
+});

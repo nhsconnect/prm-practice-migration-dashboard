@@ -3,20 +3,23 @@ import { Table } from "nhsuk-react-components";
 import { DateTime } from "luxon";
 
 interface MigrationStat {
-  cutover_startdate: string;
-  cutover_enddate: string;
-  practice_name: string;
-  ccg_name: string;
-  source_system: string;
-  target_system: string;
-  cutover_duration: number;
+  cutover_startdate?: string;
+  cutover_enddate?: string;
+  practice_name?: string;
+  ccg_name?: string;
+  source_system?: string;
+  target_system?: string;
+  cutover_duration?: number;
 }
 
 interface MigrationStatsTableProps {
   migrationStats: MigrationStat[];
 }
 
-function formatDate(isoDateTime: string): string {
+function formatDate(isoDateTime?: string): string {
+  if (!isoDateTime) {
+    return "—";
+  }
   return DateTime.fromISO(isoDateTime).toFormat("dd/MM/yyyy");
 }
 
@@ -36,15 +39,15 @@ export const MigrationStatsTable: FC<MigrationStatsTableProps> = ({
       </Table.Row>
     </Table.Head>
     <Table.Body>
-      {migrationStats.map((migration: MigrationStat) => (
-        <Table.Row key={migration.practice_name}>
+      {migrationStats.map((migration: MigrationStat, index: number) => (
+        <Table.Row key={migration.practice_name ?? index}>
           <Table.Cell>{formatDate(migration.cutover_startdate)}</Table.Cell>
           <Table.Cell>{formatDate(migration.cutover_enddate)}</Table.Cell>
-          <Table.Cell>{migration.practice_name}</Table.Cell>
-          <Table.Cell>{migration.ccg_name}</Table.Cell>
-          <Table.Cell>{migration.source_system}</Table.Cell>
-          <Table.Cell>{migration.target_system}</Table.Cell>
-          <Table.Cell>{migration.cutover_duration}</Table.Cell>
+          <Table.Cell>{migration.practice_name ?? "—"}</Table.Cell>
+          <Table.Cell>{migration.ccg_name ?? "—"}</Table.Cell>
+          <Table.Cell>{migration.source_system ?? "—"}</Table.Cell>
+          <Table.Cell>{migration.target_system ?? "—"}</Table.Cell>
+          <Table.Cell>{migration.cutover_duration ?? "—"}</Table.Cell>
         </Table.Row>
       ))}
     </Table.Body>
