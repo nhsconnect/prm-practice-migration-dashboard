@@ -3,7 +3,7 @@ import * as React from "react";
 import Header from "./header";
 import "./layout.scss";
 import { FC, ReactNode } from "react";
-
+import { Footer } from "nhsuk-react-components";
 
 interface LayoutProps {
   children: ReactNode;
@@ -25,16 +25,10 @@ const Layout: FC<LayoutProps> = ({ children }) => {
             <div className="nhsuk-width-container">{children}</div>
           </section>
         </main>
-        <footer
-          style={{
-            marginTop: `2rem`,
-          }}
-        >
-          © {new Date().getFullYear()}, Built with
-          {` `}
-          <a href="https://www.gatsbyjs.com">Gatsby</a>
-        </footer>
       </div>
+      <Footer>
+        <Footer.Copyright>&copy; Crown copyright</Footer.Copyright>
+      </Footer>
     </>
   );
 };

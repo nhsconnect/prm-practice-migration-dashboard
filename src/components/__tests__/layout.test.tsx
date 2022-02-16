@@ -1,7 +1,9 @@
 import * as React from "react";
 
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import Layout from "../layout";
+
+import content from "../../data/content/header.json";
 
 it("renders general page layout", () => {
   render(
@@ -10,5 +12,7 @@ it("renders general page layout", () => {
     </Layout>
   );
 
-  // expect(screen.getByRole('img', { name: 'fancy image' })).toBeTruthy();
+  expect(screen.queryByText(content.serviceName)).toBeTruthy(); // from Header
+  expect(screen.queryByText("Page content")).toBeTruthy();
+  expect(screen.queryByText(/ Crown copyright/)).toBeTruthy(); // from Footer
 });
