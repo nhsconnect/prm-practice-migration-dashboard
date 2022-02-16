@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import IndexPage from "../index";
 
 jest.mock(
-  "../../data/content/migrations.json",
+  "../../data/metrics/migrations.json",
   () => [
     {
       cutover_startdate: "2022-01-01T02:03:04Z",

@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { FC } from "react";
 import Layout from "../components/layout";
-import migrations from "../data/content/migrations.json";
+import migrations from "../data/metrics/migrations.json";
 import MigrationStatsTable from "../components/MigrationStatsTable";
 
 const IndexPage: FC = () => (

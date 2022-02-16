@@ -15,7 +15,7 @@ const defaultMigrationStats = [
   },
 ];
 
-jest.mock("../../data/content/migrations.json", () => defaultMigrationStats, {
+jest.mock("../../data/metrics/migrations.json", () => defaultMigrationStats, {
   virtual: true,
 });
 
