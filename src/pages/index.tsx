@@ -1,9 +1,10 @@
 import { Table } from "nhsuk-react-components";
 import * as React from "react";
+import { DateTime } from "luxon";
 
 import { FC } from "react";
 import Layout from "../components/layout";
-import migrations from '../data/content/migrations.json';
+import migrations from "../data/content/migrations.json";
 
 interface MigrationStat {
   cutover_startdate: string;
@@ -30,19 +31,25 @@ const IndexPage: FC = () => (
         </Table.Row>
       </Table.Head>
       <Table.Body>
-        {
-          migrations.map(((migration : MigrationStat) => (
-            <Table.Row key={migration.practice_name}>
-              <Table.Cell>{migration.cutover_startdate}</Table.Cell>
-              <Table.Cell>{migration.cutover_enddate}</Table.Cell>
-              <Table.Cell>{migration.practice_name}</Table.Cell>
-              <Table.Cell>{migration.ccg_name}</Table.Cell>
-              <Table.Cell>{migration.source_system}</Table.Cell>
-              <Table.Cell>{migration.target_system}</Table.Cell>
-              <Table.Cell>{migration.cutover_duration}</Table.Cell>
-            </Table.Row>
-          )))
-        }
+        {migrations.map((migration: MigrationStat) => (
+          <Table.Row key={migration.practice_name}>
+            <Table.Cell>
+              {DateTime.fromISO(migration.cutover_startdate).toFormat(
+                "dd/MM/yyyy"
+              )}
+            </Table.Cell>
+            <Table.Cell>
+              {DateTime.fromISO(migration.cutover_enddate).toFormat(
+                "dd/MM/yyyy"
+              )}
+            </Table.Cell>
+            <Table.Cell>{migration.practice_name}</Table.Cell>
+            <Table.Cell>{migration.ccg_name}</Table.Cell>
+            <Table.Cell>{migration.source_system}</Table.Cell>
+            <Table.Cell>{migration.target_system}</Table.Cell>
+            <Table.Cell>{migration.cutover_duration}</Table.Cell>
+          </Table.Row>
+        ))}
       </Table.Body>
     </Table>
   </Layout>
