@@ -4,6 +4,7 @@ import Header from "./header";
 import "./layout.scss";
 import { Footer, Hero } from "nhsuk-react-components";
 import { PhaseBanner } from "./PhaseBanner";
+import content from "../data/content/layout.json";
 
 interface LayoutProps {
   children: ReactNode;
@@ -13,15 +14,12 @@ const Layout: FC<LayoutProps> = ({ children }) => {
   return (
     <>
       <Header />
-      <PhaseBanner tag="PUBLIC ALPHA">
-        This is a new site. Content and structure are subject to change.
+      <PhaseBanner tag={content.phaseBanner.tag}>
+        {content.phaseBanner.text}
       </PhaseBanner>
       <Hero>
-        <Hero.Heading>Practice Migration data</Hero.Heading>
-        <Hero.Text>
-          This platform provides monthly data about system migrations for
-          practices in England.
-        </Hero.Text>
+        <Hero.Heading>{content.hero.heading}</Hero.Heading>
+        <Hero.Text>{content.hero.text}</Hero.Text>
       </Hero>
       <div
         style={{
@@ -37,7 +35,7 @@ const Layout: FC<LayoutProps> = ({ children }) => {
         </main>
       </div>
       <Footer>
-        <Footer.Copyright>&copy; Crown copyright</Footer.Copyright>
+        <Footer.Copyright>{content.copyright}</Footer.Copyright>
       </Footer>
     </>
   );

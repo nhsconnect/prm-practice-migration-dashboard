@@ -1,6 +1,7 @@
 import React, { FC } from "react";
 import { Table } from "nhsuk-react-components";
 import { DateTime } from "luxon";
+import content from "../../data/content/migrationStatsTable.json";
 
 interface MigrationStat {
   cutover_startdate?: string;
@@ -29,13 +30,13 @@ export const MigrationStatsTable: FC<MigrationStatsTableProps> = ({
   <Table>
     <Table.Head>
       <Table.Row>
-        <Table.Cell>Cutover Start Date</Table.Cell>
-        <Table.Cell>Cutover End Date</Table.Cell>
-        <Table.Cell>Practice Name</Table.Cell>
-        <Table.Cell>CCG Name</Table.Cell>
-        <Table.Cell>Source System</Table.Cell>
-        <Table.Cell>Target System</Table.Cell>
-        <Table.Cell>Cutover Duration (Days)</Table.Cell>
+        <Table.Cell>{content.headings.cutoverStartDate}</Table.Cell>
+        <Table.Cell>{content.headings.cutoverEndDate}</Table.Cell>
+        <Table.Cell>{content.headings.practiceName}</Table.Cell>
+        <Table.Cell>{content.headings.ccgName}</Table.Cell>
+        <Table.Cell>{content.headings.sourceSystem}</Table.Cell>
+        <Table.Cell>{content.headings.targetSystem}</Table.Cell>
+        <Table.Cell>{content.headings.cutoverDuration}</Table.Cell>
       </Table.Row>
     </Table.Head>
     <Table.Body>
