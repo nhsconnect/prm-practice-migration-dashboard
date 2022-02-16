@@ -1,7 +1,7 @@
 [
   {
-    "cutover_startdate": "01/01/2022",
-    "cutover_enddate": "12/02/2022",
+    "cutover_startdate": "2022-01-01T03:04:05",
+    "cutover_enddate": "2022-02-12T05:04:03",
     "practice_name": "Bury",
     "ccg_name": "Greater Manchester",
     "source_system": "EMIS Web",
