@@ -13,6 +13,12 @@ it("renders general page layout", () => {
   );
 
   expect(screen.queryByText(content.serviceName)).toBeTruthy(); // from Header
+  expect(screen.queryByText("PUBLIC ALPHA")).toBeTruthy();
+  expect(
+    screen.queryByText(
+      "This is a new site. Content and structure are subject to change."
+    )
+  ).toBeTruthy();
   expect(screen.queryByText("Practice Migration data")).toBeTruthy();
   expect(
     screen.queryByText(

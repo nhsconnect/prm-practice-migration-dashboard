@@ -1,9 +1,9 @@
-import * as React from "react";
+import React, { FC, ReactNode } from "react";
 
 import Header from "./header";
 import "./layout.scss";
-import { FC, ReactNode } from "react";
 import { Footer, Hero } from "nhsuk-react-components";
+import { PhaseBanner } from "./PhaseBanner";
 
 interface LayoutProps {
   children: ReactNode;
@@ -13,6 +13,9 @@ const Layout: FC<LayoutProps> = ({ children }) => {
   return (
     <>
       <Header />
+      <PhaseBanner tag="PUBLIC ALPHA">
+        This is a new site. Content and structure are subject to change.
+      </PhaseBanner>
       <Hero>
         <Hero.Heading>Practice Migration data</Hero.Heading>
         <Hero.Text>
