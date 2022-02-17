@@ -71,3 +71,5 @@ yarn-error.log
 # Terraform
 .terraform/
 *.tfplan
+
+src/data/metrics/*
