@@ -22,8 +22,7 @@ variable "repo_name" {
   description = "Name of this repository"
 }
 
-variable "s3_metrics_bucket_name" {
+variable "metrics_bucket_name" {
   type        = string
-  default     = "prm-practice-migration-metrics"
-  description = "Name of buckets which metrics are written to"
+  description = "Name of bucket which metrics are written to"
 }

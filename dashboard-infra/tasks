@@ -20,6 +20,7 @@ s3_state_key=$(jq -r .${stack_env}.state_key_prefix environment.json)${stack_nam
 echo "Terraform state stored in s3://${state_bucket}/${s3_state_key}"
 
 function assume_role() {
+  unset AWS_SECURITY_TOKEN
   role_arn_param=$(jq -r .${stack_env}.role_arn_param environment.json)
   if [ "$role_arn_param" != "null" ]; then
     role_arn=$(aws ssm get-parameters --region ${state_region} --names ${role_arn_param} --query 'Parameters[0].Value' --output text)
@@ -43,7 +44,6 @@ function assume_role() {
     export AWS_SECRET_ACCESS_KEY=$(echo $sts | jq -r .Credentials.SecretAccessKey)
     export AWS_SESSION_TOKEN=$(echo $sts | jq -r .Credentials.SessionToken)
   fi
-
 }
 
 export TF_DATA_DIR=.terraform/${stack_env}/${stack_name}
@@ -58,6 +58,14 @@ function tf_init() {
     ${tf_dir}
 }
 
+function get_stubs() {
+  assume_role
+  bucket_name=$(jq -r .metrics_bucket_name "stacks/${stack_name}/vars/${stack_env}.tfvars.json")
+  metrics_dir_path="../src/data/metrics/"
+  mkdir -p "${metrics_dir_path}"
+  aws s3api get-object --bucket "${bucket_name}" --key "migrations.json" "${metrics_dir_path}/migrations.json"
+}
+
 echo "--- ${task} ---"
 case "${task}" in
 validate)
@@ -70,7 +78,7 @@ dojo-validate)
 plan)
   tf_init
   terraform plan -var environment=$env_name \
-    -var-file=stacks/${stack_name}/vars/${stack_env}.tfvars \
+    -var-file=stacks/${stack_name}/vars/${stack_env}.tfvars.json \
     -out=${stack_env}.tfplan ${tf_dir}
   ;;
 dojo-plan)
@@ -89,12 +97,15 @@ format)
 destroy)
   tf_init
   terraform destroy -var environment=$env_name \
-    -var-file=stacks/${stack_name}/vars/${stack_env}.tfvars \
+    -var-file=stacks/${stack_name}/vars/${stack_env}.tfvars.json \
     ${tf_dir}
   ;;
 dojo-destroy)
   dojo "./tasks destroy ${stack_name} ${stack_env}"
   ;;
+get-stubs)
+    get_stubs
+    ;;
 *)
   echo "Invalid task: '${task}'"
   exit 1

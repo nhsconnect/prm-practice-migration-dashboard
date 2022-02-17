@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "dashboard_data" {
-  bucket = var.s3_metrics_bucket_name
+  bucket = var.metrics_bucket_name
 }
 
 resource "aws_s3_bucket_public_access_block" "dashboard_data" {
