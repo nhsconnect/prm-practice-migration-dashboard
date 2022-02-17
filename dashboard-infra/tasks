@@ -58,14 +58,6 @@ function tf_init() {
     ${tf_dir}
 }
 
-function get_stubs() {
-  assume_role
-  bucket_name=$(jq -r .metrics_bucket_name "stacks/${stack_name}/vars/${stack_env}.tfvars.json")
-  metrics_dir_path="../src/data/metrics/"
-  mkdir -p "${metrics_dir_path}"
-  aws s3api get-object --bucket "${bucket_name}" --key "migrations.json" "${metrics_dir_path}/migrations.json"
-}
-
 echo "--- ${task} ---"
 case "${task}" in
 validate)
@@ -103,9 +95,6 @@ destroy)
 dojo-destroy)
   dojo "./tasks destroy ${stack_name} ${stack_env}"
   ;;
-get-stubs)
-    get_stubs
-    ;;
 *)
   echo "Invalid task: '${task}'"
   exit 1

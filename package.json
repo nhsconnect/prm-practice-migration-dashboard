@@ -49,6 +49,7 @@
   ],
   "license": "0BSD",
   "scripts": {
+    "prebuild": "./scripts/get-dashboard-data.sh",
     "build": "gatsby build",
     "develop": "gatsby develop",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
