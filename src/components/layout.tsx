@@ -35,7 +35,7 @@ const Layout: FC<LayoutProps> = ({ children }) => {
         </main>
       </div>
       <Footer>
-        <Footer.Copyright>{content.copyright}</Footer.Copyright>
+        <Footer.Copyright>&copy; {content.copyright}</Footer.Copyright>
       </Footer>
     </>
   );
