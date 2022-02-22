@@ -71,14 +71,14 @@ plan)
   tf_init
   terraform plan -var environment=$env_name \
     -var-file=stacks/${stack_name}/vars/${stack_env}.tfvars.json \
-    -out=${stack_env}.tfplan ${tf_dir}
+    -out=${stack_name}-${stack_env}.tfplan ${tf_dir}
   ;;
 dojo-plan)
   dojo "./tasks plan ${stack_name} ${stack_env}"
   ;;
 apply)
   tf_init
-  terraform apply ${stack_env}.tfplan
+  terraform apply ${stack_name}-${stack_env}.tfplan
   ;;
 dojo-apply)
   dojo "./tasks apply ${stack_name} ${stack_env}"
