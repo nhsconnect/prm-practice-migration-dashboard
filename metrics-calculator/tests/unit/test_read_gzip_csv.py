@@ -5,10 +5,10 @@ from src.s3 import read_gzip_csv
 from tests.builders.file import build_gzip_csv
 
 
-@mock_s3()
+@mock_s3
 def test_returns_csv_row_as_dictionary():
     s3 = boto3.resource("s3", region_name="us-east-1")
-    bucket = s3.create_bucket(Bucket="test_bucket", )
+    bucket = s3.create_bucket(Bucket="test_bucket")
     s3_object = bucket.Object("test_object.csv.gz")
     s3_object.put(
         Body=build_gzip_csv(
