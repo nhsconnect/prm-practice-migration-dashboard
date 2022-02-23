@@ -1,12 +1,21 @@
+import json
+import boto3
 from chalice import Chalice
 
 app = Chalice(app_name='metrics-calculator')
 
+# TODO: Telemetry bucket name config
+# TODO: Telemetry file name config
+# TODO: Metrics bucket name config
 
-@app.route('/')
-def index():
 
-    return {'hello': 'world'}
+@app.lambda_function()
+def calculate_dashboard_metrics_from_telemetry(event, context):
+    s3 = boto3.resource("s3", region_name="eu-west-2")
+    migrations = {"foo": "bar"}
+    s3.Object("metrics_bucket", "migrations.json").put(
+        Body=json.dumps(migrations))
+    return "ok"
 
 
 # The view function above will return {"hello": "world"}
