@@ -73,3 +73,6 @@ yarn-error.log
 *.tfplan
 
 src/data/metrics/*
+/metrics-calculator/venv39/
+
+.idea
