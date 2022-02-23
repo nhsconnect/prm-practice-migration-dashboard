@@ -1,4 +1,7 @@
 .chalice/deployments/
 .chalice/venv/
-__pycache__
 .idea
+
+# Python
+__pycache__
+venv39/
