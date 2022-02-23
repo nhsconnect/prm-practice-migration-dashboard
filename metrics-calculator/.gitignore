@@ -1,6 +1,7 @@
 .chalice/deployments/
 .chalice/venv/
 .idea
+.vscode/
 
 # Python
 __pycache__
