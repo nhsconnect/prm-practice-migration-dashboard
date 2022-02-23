@@ -1,5 +1,4 @@
-import csv
-import gzip
+
 import sys
 import logging
 from urllib.parse import urlparse
@@ -14,7 +13,7 @@ def _object_from_uri(client, uri: str):
     return client.Object(s3_bucket, s3_key)
 
 
-def read_gzip_csv(client, object_uri: str):
+def read_object_s3(client, object_uri: str):
     logger.info(
         "Reading file from: " + object_uri,
         extra={"event": "READING_FILE_FROM_S3", "object_uri": object_uri},
@@ -24,9 +23,7 @@ def read_gzip_csv(client, object_uri: str):
     try:
         response = s3_object.get()
         body = response["Body"]
-        with gzip.open(body, mode="rt") as f:
-            input_csv = csv.DictReader(f)
-            yield from input_csv
+        return body
     except client.meta.client.exceptions.NoSuchKey:
         logger.error(
             f"File not found: {object_uri}, exiting...",

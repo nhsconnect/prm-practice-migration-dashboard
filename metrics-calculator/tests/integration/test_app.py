@@ -2,7 +2,6 @@ import boto3
 import json
 from moto import mock_s3
 from chalice.test import Client
-from src.s3 import read_gzip_csv
 from src.app import app
 from tests.builders.file import build_gzip_csv
 
