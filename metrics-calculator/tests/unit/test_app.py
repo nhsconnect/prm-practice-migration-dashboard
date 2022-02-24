@@ -18,14 +18,20 @@ def aws_credentials():
     os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def s3(aws_credentials):
     with mock_s3():
         yield boto3.resource('s3', region_name='us-east-1')
 
 
+@pytest.fixture(scope="function")
+def test_client():
+    with Client(app) as client:
+        yield client
+
+
 @mock_s3
-def test_calculate_dashboard_metrics_from_telemetry(s3):
+def test_calculate_dashboard_metrics_from_telemetry(test_client, s3):
     telemetry_bucket = s3.create_bucket(Bucket="telemetry_bucket")
     s3.create_bucket(Bucket="metrics_bucket")
     telemetry_bucket.Object("1234-telemetry.csv").put(
@@ -40,10 +46,8 @@ def test_calculate_dashboard_metrics_from_telemetry(s3):
             rows=[["2021-12-05T15:42:00.000+0000"]],
         )
     )
+    result = test_client.lambda_.invoke(
+        'calculate_dashboard_metrics_from_telemetry',
+        {"oldAsid": "1234", "newAsid": "5678", "odsCode": "A12345"})
 
-    with Client(app) as client:
-        result = client.lambda_.invoke(
-            'calculate_dashboard_metrics_from_telemetry',
-            {"oldAsid": "1234", "newAsid": "5678", "odsCode": "A12345"})
-
-        assert result.payload == "ok"
+    assert result.payload == "ok"

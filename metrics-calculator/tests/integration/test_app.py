@@ -25,8 +25,14 @@ def s3(aws_credentials):
         yield boto3.resource('s3', region_name='us-east-1')
 
 
+@pytest.fixture(scope="function")
+def test_client():
+    with Client(app) as client:
+        yield client
+
+
 @mock_s3
-def test_calculate_dashboard_metrics_from_telemetry(s3):
+def test_calculate_dashboard_metrics_from_telemetry(test_client, s3):
     telemetry_bucket = s3.create_bucket(Bucket="telemetry_bucket")
     metrics_bucket = s3.create_bucket(Bucket="metrics_bucket")
     telemetry_bucket.Object("1234-telemetry.csv").put(
@@ -44,10 +50,9 @@ def test_calculate_dashboard_metrics_from_telemetry(s3):
         )
     )
 
-    with Client(app) as client:
-        client.lambda_.invoke(
-            'calculate_dashboard_metrics_from_telemetry',
-            {"oldAsid": "1234", "newAsid": "5678", "odsCode": "A12345"})
+    test_client.lambda_.invoke(
+        'calculate_dashboard_metrics_from_telemetry',
+        {"oldAsid": "1234", "newAsid": "5678", "odsCode": "A12345"})
 
     migrations_obj = metrics_bucket.Object("migrations.json").get()
     migrations_body = migrations_obj['Body'].read().decode('utf-8')
