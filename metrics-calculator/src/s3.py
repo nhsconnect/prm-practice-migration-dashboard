@@ -35,12 +35,4 @@ def read_object_s3(client, object_uri: str):
 def write_object_s3(client, object_uri: str, body):
     s3_object = _object_from_uri(client, object_uri)
 
-    try:
-        s3_object.put(Body=body)
-    except client.meta.client.exceptions.NoSuchKey:
-        logger.error(
-            f"File not written: {object_uri}, exiting...",
-            extra={"event": "FILE_CANNOT_BE_WRITTEN_TO_S3",
-                   "object_uri": object_uri},
-        )
-        sys.exit(1)
+    s3_object.put(Body=body)
