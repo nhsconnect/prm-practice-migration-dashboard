@@ -5,7 +5,7 @@ from src.s3 import write_object_s3
 
 
 @mock_s3
-def test_writes_object_content():
+def test_write_object_s3_writes_object_content():
     s3 = boto3.resource("s3", region_name="us-east-1")
     s3.create_bucket(Bucket="test_bucket")
 
