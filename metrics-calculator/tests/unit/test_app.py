@@ -1,13 +1,31 @@
 import boto3
 from chalice.test import Client
 from moto import mock_s3
+import pytest
+import os
+
 from src.app import app
 from tests.builders.file import build_gzip_csv
 
 
+@pytest.fixture(scope='function')
+def aws_credentials():
+    """Mocked AWS Credentials for moto."""
+    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
+    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+    os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
+
+
+@pytest.fixture(scope='function')
+def s3(aws_credentials):
+    with mock_s3():
+        yield boto3.resource('s3', region_name='us-east-1')
+
+
 @mock_s3
-def test_calculate_dashboard_metrics_from_telemetry():
-    s3 = boto3.resource("s3", region_name="us-east-1")
+def test_calculate_dashboard_metrics_from_telemetry(s3):
     telemetry_bucket = s3.create_bucket(Bucket="telemetry_bucket")
     s3.create_bucket(Bucket="metrics_bucket")
     telemetry_bucket.Object("1234-telemetry.csv").put(
