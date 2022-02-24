@@ -1,7 +1,7 @@
 import boto3
 from moto import mock_s3
 
-from src.read_object_s3 import write_object_s3
+from src.s3 import write_object_s3
 
 
 @mock_s3

@@ -3,7 +3,7 @@ import boto3
 from chalice import Chalice
 from src.metrics_engine import calculate_cutover_start_and_end_date
 
-from src.read_object_s3 import read_object_s3, write_object_s3
+from src.s3 import read_object_s3, write_object_s3
 from src.csv_rows import csv_rows
 
 app = Chalice(app_name='metrics-calculator')
@@ -37,7 +37,8 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
 
 def upload_migrations(s3, migrations):
     metrics_bucket_name = "metrics_bucket"
-    write_object_s3(s3, f"s3://{metrics_bucket_name}/migrations.json", json.dumps(migrations))
+    write_object_s3(
+        s3, f"s3://{metrics_bucket_name}/migrations.json", json.dumps(migrations))
 
 
 def get_telemetry(s3, telemetry_bucket_name, new_telemetry_object_name):
