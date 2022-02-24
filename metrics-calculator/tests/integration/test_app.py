@@ -31,9 +31,19 @@ def test_client():
         yield client
 
 
+@pytest.fixture(scope="function")
+def lambda_environment_vars():
+    with open('.chalice/config.json') as f:
+        config = json.loads(f.read())
+        yield config["stages"]["dev"]["lambda_functions"][
+            "calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
+
+
 @mock_s3
-def test_calculate_dashboard_metrics_from_telemetry(test_client, s3):
-    telemetry_bucket = s3.create_bucket(Bucket="telemetry_bucket")
+def test_calculate_dashboard_metrics_from_telemetry(
+        test_client, lambda_environment_vars, s3):
+    telemetry_bucket_name = lambda_environment_vars["TELEMETRY_BUCKET_NAME"]
+    telemetry_bucket = s3.create_bucket(Bucket=telemetry_bucket_name)
     metrics_bucket = s3.create_bucket(Bucket="metrics_bucket")
     telemetry_bucket.Object("1234-telemetry.csv").put(
         Body=build_gzip_csv(

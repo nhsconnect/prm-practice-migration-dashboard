@@ -3,7 +3,13 @@
   "app_name": "metrics-calculator",
   "stages": {
     "dev": {
-      "api_gateway_stage": "api"
+      "lambda_functions": {
+        "calculate_dashboard_metrics_from_telemetry": {
+          "environment_variables": {
+            "TELEMETRY_BUCKET_NAME": "prm-pracmig-telemetry-dev"
+          }
+        }
+      }
     }
   }
 }
