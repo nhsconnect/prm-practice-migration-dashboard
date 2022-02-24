@@ -1,5 +1,4 @@
 
-import sys
 import logging
 from urllib.parse import urlparse
 
@@ -19,20 +18,11 @@ def read_object_s3(client, object_uri: str):
         extra={"event": "READING_FILE_FROM_S3", "object_uri": object_uri},
     )
     s3_object = _object_from_uri(client, object_uri)
-
-    try:
-        response = s3_object.get()
-        body = response["Body"]
-        return body
-    except client.meta.client.exceptions.NoSuchKey:
-        logger.error(
-            f"File not found: {object_uri}, exiting...",
-            extra={"event": "FILE_NOT_FOUND_IN_S3", "object_uri": object_uri},
-        )
-        sys.exit(1)
+    response = s3_object.get()
+    body = response["Body"]
+    return body
 
 
 def write_object_s3(client, object_uri: str, body):
     s3_object = _object_from_uri(client, object_uri)
-
     s3_object.put(Body=body)
