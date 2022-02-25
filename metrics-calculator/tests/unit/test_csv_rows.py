@@ -1,5 +1,6 @@
 from io import BytesIO
-from src.csv_rows import csv_rows
+
+from lib.csv_rows import csv_rows
 from tests.builders.file import build_gzip_csv
 
 

@@ -5,7 +5,7 @@ import pytest
 import os
 
 from chalice.test import Client
-from src.app import app
+from app import app
 from tests.builders.file import build_gzip_csv
 
 

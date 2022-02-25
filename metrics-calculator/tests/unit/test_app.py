@@ -5,7 +5,7 @@ from moto import mock_s3
 import pytest
 import os
 
-from src.app import app
+from app import app
 from tests.builders.file import build_gzip_csv
 
 
