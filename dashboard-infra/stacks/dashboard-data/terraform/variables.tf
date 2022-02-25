@@ -6,7 +6,7 @@ variable "region" {
 
 variable "environment" {
   type        = string
-  default     = "test"
+  default     = "dev"
   description = "Uniquely identities each deployment, i.e. dev, prod."
 }
 
