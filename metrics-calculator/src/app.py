@@ -9,8 +9,6 @@ from src.csv_rows import csv_rows
 
 app = Chalice(app_name='metrics-calculator')
 
-# TODO: Metrics bucket name config
-
 
 @app.lambda_function()
 def calculate_dashboard_metrics_from_telemetry(event, context):
@@ -35,7 +33,7 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
 
 
 def upload_migrations(s3, migrations):
-    metrics_bucket_name = "metrics_bucket"
+    metrics_bucket_name = os.environ["METRICS_BUCKET_NAME"]
     write_object_s3(
         s3, f"s3://{metrics_bucket_name}/migrations.json", json.dumps(migrations))
 

@@ -44,7 +44,6 @@ def test_calculate_dashboard_metrics_from_telemetry(
         test_client, lambda_environment_vars, s3):
     telemetry_bucket_name = lambda_environment_vars["TELEMETRY_BUCKET_NAME"]
     telemetry_bucket = s3.create_bucket(Bucket=telemetry_bucket_name)
-    s3.create_bucket(Bucket="metrics_bucket")
     telemetry_bucket.Object("1234-telemetry.csv").put(
         Body=build_gzip_csv(
             header=["_time"],
@@ -57,6 +56,9 @@ def test_calculate_dashboard_metrics_from_telemetry(
             rows=[["2021-12-05T15:42:00.000+0000"]],
         )
     )
+    metrics_bucket_name = lambda_environment_vars["METRICS_BUCKET_NAME"]
+    s3.create_bucket(Bucket=metrics_bucket_name)
+
     result = test_client.lambda_.invoke(
         'calculate_dashboard_metrics_from_telemetry',
         {"oldAsid": "1234", "newAsid": "5678", "odsCode": "A12345"})

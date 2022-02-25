@@ -6,7 +6,8 @@
       "lambda_functions": {
         "calculate_dashboard_metrics_from_telemetry": {
           "environment_variables": {
-            "TELEMETRY_BUCKET_NAME": "prm-pracmig-telemetry-dev"
+            "TELEMETRY_BUCKET_NAME": "prm-pracmig-telemetry-dev",
+            "METRICS_BUCKET_NAME": "prm-pracmig-metrics-dev"
           }
         }
       }
