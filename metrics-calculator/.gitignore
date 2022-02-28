@@ -2,6 +2,7 @@
 .chalice/venv/
 .idea
 .vscode/
+build
 
 # Python
 __pycache__
