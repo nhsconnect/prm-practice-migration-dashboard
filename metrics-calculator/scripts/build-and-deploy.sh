@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -o pipefail
 
 BUCKET_ROOT_NAME=prm-pracmig-metrics-calculator-deployments
 ENV=dev
