@@ -1,4 +1,4 @@
-from lib.metrics_engine import calculate_cutover_start_and_end_date
+from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
 
 
 def test_calculate_cutover_start_and_end_date():

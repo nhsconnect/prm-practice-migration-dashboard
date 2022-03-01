@@ -3,9 +3,9 @@ import os
 import boto3
 from chalice import Chalice
 
-from lib.metrics_engine import calculate_cutover_start_and_end_date
-from lib.s3 import read_object_s3, write_object_s3
-from lib.csv_rows import csv_rows
+from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
+from chalicelib.s3 import read_object_s3, write_object_s3
+from chalicelib.csv_rows import csv_rows
 
 app = Chalice(app_name='metrics-calculator')
 
