@@ -6,7 +6,7 @@ BUCKET_ROOT_NAME=metric-calculator-deployments
 ENV=dev
 BUCKET_NAME="${BUCKET_ROOT_NAME}-${ENV}"
 
-chalice package build
+chalice package build/
 
 if aws s3api head-bucket --bucket "${BUCKET_NAME}" 2>&1 | grep -q 'Not Found'
 then
@@ -32,5 +32,8 @@ aws cloudformation deploy \
 
 # Outputs to use in tfvars on the metrics calculator stack
 JSON=$(cat "./build/packaged-cf.json")
-echo "${JSON}" | jq .Resources.CalculateDashboardMetricsFromTelemetry.Properties.Handler
-echo "${JSON}" | jq .Resources.CalculateDashboardMetricsFromTelemetry.Properties.CodeUri
+HANDLER=$(echo "${JSON}" | jq .Resources.CalculateDashboardMetricsFromTelemetry.Properties.Handler | tr -d '"')
+CODE_URI=$(echo "${JSON}" | jq .Resources.CalculateDashboardMetricsFromTelemetry.Properties.CodeUri | tr -d '"' | cut -c 7-)
+OBJECT_KEY="${CODE_URI#*/}"
+echo "Merge the below into the metrics calculator stack's Terraform vars file:"
+echo "{ \"metrics_calculator_bucket_name\": \"${BUCKET_NAME}\", \"metrics_calculator_code_key\": \"${OBJECT_KEY}\", \"metrics_calculator_handler_name\": \"${HANDLER}\" }" | jq
