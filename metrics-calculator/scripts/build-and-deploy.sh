@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-BUCKET_ROOT_NAME=metric-calculator-deployments
+BUCKET_ROOT_NAME=prm-pracmig-metrics-calculator-deployments
 ENV=dev
 BUCKET_NAME="${BUCKET_ROOT_NAME}-${ENV}"
 
