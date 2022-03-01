@@ -6,10 +6,15 @@ BUCKET_ROOT_NAME=prm-pracmig-metrics-calculator-deployments
 ENV=dev
 BUCKET_NAME="${BUCKET_ROOT_NAME}-${ENV}"
 
+aws s3api head-bucket --bucket "${BUCKET_NAME}" 2>&1 | grep -q 'Not Found'
+BUCKET_EXISTS=$?
+
+set -e
+
 chalice package build/
 
-if aws s3api head-bucket --bucket "${BUCKET_NAME}" 2>&1 | grep -q 'Not Found'
-then
+if [ "${BUCKET_EXISTS}" -ne 0 ]; then
+  echo "Deployment bucket does not exist, creating..."
   aws s3api create-bucket \
     --bucket "${BUCKET_NAME}" \
     --acl private \
@@ -18,6 +23,8 @@ then
   aws s3api put-public-access-block \
     --bucket "${BUCKET_NAME}" \
     --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+else
+  echo "Deployment bucket already exists"
 fi
 
 aws cloudformation package \
