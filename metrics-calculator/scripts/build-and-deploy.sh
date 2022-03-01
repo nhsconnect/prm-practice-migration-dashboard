@@ -36,4 +36,4 @@ HANDLER=$(echo "${JSON}" | jq .Resources.CalculateDashboardMetricsFromTelemetry.
 CODE_URI=$(echo "${JSON}" | jq .Resources.CalculateDashboardMetricsFromTelemetry.Properties.CodeUri | tr -d '"' | cut -c 7-)
 OBJECT_KEY="${CODE_URI#*/}"
 echo "Merge the below into the metrics calculator stack's Terraform vars file:"
-echo "{ \"metrics_calculator_bucket_name\": \"${BUCKET_NAME}\", \"metrics_calculator_code_key\": \"${OBJECT_KEY}\", \"metrics_calculator_handler_name\": \"${HANDLER}\" }" | jq
+echo "{ \"metrics_calculator_deployment_bucket_name\": \"${BUCKET_NAME}\", \"metrics_calculator_code_key\": \"${OBJECT_KEY}\", \"metrics_calculator_handler_name\": \"${HANDLER}\" }" | jq
