@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 BUCKET_ROOT_NAME=metric-calculator-deployments
 ENV=dev
 BUCKET_NAME="${BUCKET_ROOT_NAME}-${ENV}"
