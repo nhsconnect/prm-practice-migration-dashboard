@@ -13,7 +13,7 @@ set -e
 
 chalice package build/
 
-if [ "${BUCKET_EXISTS}" -ne 0 ]; then
+if [ "${BUCKET_EXISTS}" -ne 1 ]; then
   echo "Deployment bucket does not exist, creating..."
   aws s3api create-bucket \
     --bucket "${BUCKET_NAME}" \
@@ -32,10 +32,6 @@ aws cloudformation package \
   --s3-bucket "${BUCKET_NAME}" \
   --output-template-file "./build/packaged-cf.json" \
   --use-json
-aws cloudformation deploy \
-  --template-file "./build/packaged-cf.json" \
-  --stack-name "metrics-calculator-${ENV}" \
-  --capabilities CAPABILITY_IAM
 
 # Outputs to use in tfvars on the metrics calculator stack
 JSON=$(cat "./build/packaged-cf.json")
