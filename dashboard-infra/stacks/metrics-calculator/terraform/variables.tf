@@ -34,7 +34,7 @@ variable "metrics_bucket_name" {
 
 variable "metrics_calculator_function_name" {
   type    = string
-  default = "metric_calculator"
+  default = "metrics_calculator"
 }
 
 variable "metrics_calculator_deployment_bucket_name" {
