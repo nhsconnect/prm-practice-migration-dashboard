@@ -12,10 +12,14 @@ app = Chalice(app_name='metrics-calculator')
 
 @app.lambda_function()
 def calculate_dashboard_metrics_from_telemetry(event, context):
+    old_asid = event['oldAsid']
+    new_asid = event['newAsid']
+    ods_code = event["odsCode"]
+
     telemetry_bucket_name = os.environ['TELEMETRY_BUCKET_NAME']
+    old_telemetry_object_name = f"{old_asid}-telemetry.csv.gz"
+    new_telemetry_object_name = f"{new_asid}-telemetry.csv.gz"
     s3 = boto3.resource("s3", region_name="eu-west-2")
-    old_telemetry_object_name = f"{event['oldAsid']}-telemetry.csv"
-    new_telemetry_object_name = f"{event['newAsid']}-telemetry.csv"
 
     old_telemetry_generator = get_telemetry(
         s3, telemetry_bucket_name, old_telemetry_object_name)
@@ -25,7 +29,7 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
     migration = calculate_cutover_start_and_end_date(
         old_telemetry_generator, new_telemetry_generator)
 
-    org_details = get_org_details(event["odsCode"])
+    org_details = get_org_details(ods_code)
 
     migrations = {"migrations": [migration | org_details]}
     upload_migrations(s3, migrations)
