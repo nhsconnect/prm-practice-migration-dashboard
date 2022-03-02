@@ -2,6 +2,7 @@ resource "aws_lambda_function" "metrics_calculator_function" {
   function_name = var.metrics_calculator_function_name
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = var.metrics_calculator_handler_name
+  timeout       = 120
 
   runtime       = "python3.9"
 
