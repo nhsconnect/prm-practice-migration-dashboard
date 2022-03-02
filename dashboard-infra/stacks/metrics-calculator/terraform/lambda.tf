@@ -36,3 +36,44 @@ resource "aws_iam_role" "iam_for_lambda" {
 }
 EOF
 }
+
+resource "aws_iam_policy" "metrics_calculator_function_policy" {
+  name        = "AllowMetricsCalculatorS3Access"
+  description = "Grant the metrics calculator function the required S3 permissions"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowReadTelemetryObjects",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::${var.telemetry_bucket_name}/*"
+    },
+    {
+      "Sid": "AllowReadTelemetryBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::${var.telemetry_bucket_name}"
+    },
+    {
+      "Sid": "AllowWriteMigrationData",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::${var.metrics_bucket_name}/*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "metrics_calculator_function_execution_policy" {
+  role       = aws_iam_role.iam_for_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "metrics_calculator_function_s3_policy" {
+  role       = aws_iam_role.iam_for_lambda.name
+  policy_arn = aws_iam_policy.metrics_calculator_function_policy.arn
+}
