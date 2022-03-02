@@ -19,7 +19,7 @@ $ npm ci
 To build and run the app locally in developer mode (where changes are hot-reloaded):
 
 ```bash
-$ npm develop
+$ npm run develop
 ```
 
 The website can then be accessed [locally on port 8000](http://localhost:8000).
