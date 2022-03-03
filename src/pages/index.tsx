@@ -7,7 +7,7 @@ import MigrationStatsTable from "../components/MigrationStatsTable";
 
 const IndexPage: FC = () => (
   <Layout>
-    <MigrationStatsTable migrationStats={migrations} />
+    <MigrationStatsTable migrationStats={migrations.migrations} />
   </Layout>
 );
 
