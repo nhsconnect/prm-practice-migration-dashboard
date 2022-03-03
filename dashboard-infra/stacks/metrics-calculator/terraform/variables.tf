@@ -27,6 +27,11 @@ variable "telemetry_bucket_name" {
   description = "Name of bucket which telemetry data is retrieved from"
 }
 
+variable "asid_lookup_bucket_name" {
+  type        = string
+  description = "Name of bucket which ASID lookup data is retrieved from"
+}
+
 variable "metrics_bucket_name" {
   type        = string
   description = "Name of bucket which metrics data is written"
