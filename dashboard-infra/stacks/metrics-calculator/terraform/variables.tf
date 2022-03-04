@@ -32,6 +32,11 @@ variable "asid_lookup_bucket_name" {
   description = "Name of bucket which ASID lookup data is retrieved from"
 }
 
+variable "migration_occurrences_bucket_name" {
+  type        = string
+  description = "Name of bucket which migration occurrences data is retrieved from"
+}
+
 variable "metrics_bucket_name" {
   type        = string
   description = "Name of bucket which metrics data is written"
