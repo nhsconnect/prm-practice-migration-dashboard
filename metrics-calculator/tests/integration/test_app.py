@@ -44,14 +44,14 @@ def test_calculate_dashboard_metrics_from_telemetry(
         test_client, lambda_environment_vars, s3):
     telemetry_bucket_name = lambda_environment_vars["TELEMETRY_BUCKET_NAME"]
     telemetry_bucket = s3.create_bucket(Bucket=telemetry_bucket_name)
-    telemetry_bucket.Object("1234-telemetry.csv").put(
+    telemetry_bucket.Object("1234-telemetry.csv.gz").put(
         Body=build_gzip_csv(
             header=["_time"],
             rows=[["2021-12-01T15:42:00.000+0000"], [
                 "2021-12-02T15:42:00.000+0000"]],
         )
     )
-    telemetry_bucket.Object("5678-telemetry.csv").put(
+    telemetry_bucket.Object("5678-telemetry.csv.gz").put(
         Body=build_gzip_csv(
             header=["_time"],
             rows=[["2021-12-05T15:42:00.000+0000"], [
