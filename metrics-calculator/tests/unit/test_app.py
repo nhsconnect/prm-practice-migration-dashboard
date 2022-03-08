@@ -1,34 +1,35 @@
 import json
-import boto3
-from chalice.test import Client
-from moto import mock_s3
 import pytest
-import os
+import sys
+from chalice.test import Client
+from unittest.mock import Mock
 
-from app import app
-from tests.builders.file import build_gzip_csv
+
+@pytest.fixture
+def s3_resource_mock(monkeypatch):
+    monkeypatch.setattr("chalicelib.s3.get_s3_resource", Mock())
+    monkeypatch.setattr("chalicelib.s3.write_object_s3", Mock())
 
 
-@pytest.fixture(scope='function')
-def aws_credentials():
-    """Mocked AWS Credentials for moto."""
-    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-    os.environ['AWS_SESSION_TOKEN'] = 'testing'
-    os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
+@pytest.fixture
+def telemetry_mock(monkeypatch):
+    old_telemetry = (x for x in [
+        {"_time": "2021-12-01T15:42:00.000+0000"}
+    ])
+    new_telemetry = (x for x in [
+        {"_time": "2021-12-05T15:42:00.000+0000"}
+    ])
+    monkeypatch.setattr(
+        "chalicelib.telemetry.get_telemetry", Mock(
+            side_effect=[old_telemetry, new_telemetry]))
 
 
 @pytest.fixture(scope="function")
-def s3(aws_credentials):
-    with mock_s3():
-        yield boto3.resource('s3', region_name='us-east-1')
-
-
-@pytest.fixture(scope="function")
-def test_client():
+def test_client(telemetry_mock, s3_resource_mock):
+    from app import app
     with Client(app) as client:
         yield client
+    sys.modules.pop('app')
 
 
 @pytest.fixture(scope="function")
@@ -39,25 +40,8 @@ def lambda_environment_vars():
             "calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
 
 
-@mock_s3
 def test_calculate_dashboard_metrics_from_telemetry(
-        test_client, lambda_environment_vars, s3):
-    telemetry_bucket_name = lambda_environment_vars["TELEMETRY_BUCKET_NAME"]
-    telemetry_bucket = s3.create_bucket(Bucket=telemetry_bucket_name)
-    telemetry_bucket.Object("1234-telemetry.csv.gz").put(
-        Body=build_gzip_csv(
-            header=["_time"],
-            rows=[["2021-12-01T15:42:00.000+0000"]],
-        )
-    )
-    telemetry_bucket.Object("5678-telemetry.csv.gz").put(
-        Body=build_gzip_csv(
-            header=["_time"],
-            rows=[["2021-12-05T15:42:00.000+0000"]],
-        )
-    )
-    metrics_bucket_name = lambda_environment_vars["METRICS_BUCKET_NAME"]
-    s3.create_bucket(Bucket=metrics_bucket_name)
+        test_client):
 
     result = test_client.lambda_.invoke(
         'calculate_dashboard_metrics_from_telemetry',

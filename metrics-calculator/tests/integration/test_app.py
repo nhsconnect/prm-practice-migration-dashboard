@@ -1,3 +1,4 @@
+import sys
 import boto3
 import json
 from moto import mock_s3
@@ -5,7 +6,6 @@ import pytest
 import os
 
 from chalice.test import Client
-from app import app
 from tests.builders.file import build_gzip_csv
 
 
@@ -27,8 +27,10 @@ def s3(aws_credentials):
 
 @pytest.fixture(scope="function")
 def test_client():
+    from app import app
     with Client(app) as client:
         yield client
+    sys.modules.pop('app')
 
 
 @pytest.fixture(scope="function")
@@ -39,7 +41,6 @@ def lambda_environment_vars():
             "calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
 
 
-@mock_s3
 def test_calculate_dashboard_metrics_from_telemetry(
         test_client, lambda_environment_vars, s3):
     telemetry_bucket_name = lambda_environment_vars["TELEMETRY_BUCKET_NAME"]
