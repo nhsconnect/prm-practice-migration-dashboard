@@ -1,14 +1,13 @@
 import json
 import pytest
-import sys
 from chalice.test import Client
 from unittest.mock import Mock
 
 
 @pytest.fixture
 def s3_resource_mock(monkeypatch):
-    monkeypatch.setattr("chalicelib.s3.get_s3_resource", Mock())
-    monkeypatch.setattr("chalicelib.s3.write_object_s3", Mock())
+    monkeypatch.setattr("app.get_s3_resource", Mock())
+    monkeypatch.setattr("app.write_object_s3", Mock())
 
 
 @pytest.fixture
@@ -29,7 +28,6 @@ def test_client(telemetry_mock, s3_resource_mock):
     from app import app
     with Client(app) as client:
         yield client
-    sys.modules.pop('app')
 
 
 @pytest.fixture(scope="function")
