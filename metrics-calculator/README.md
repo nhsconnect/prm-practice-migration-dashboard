@@ -1,6 +1,5 @@
 ## Package and Deploy
 
-`./scripts/build-and-deploy.sh`
+`./scripts/build-and-package.sh`
 
 ## Run
-

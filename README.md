@@ -4,7 +4,31 @@ A dashboard to show metrics from practice migrations.
 
 The website is developed using the [Gatsby](https://www.gatsbyjs.com/) framework.
 
-## Getting started
+## Data pipeline
+
+The dashboard uses data that is generated from a "data pipeline", written as an AWS lambda.
+
+### Building the data pipeline
+
+The data pipeline can be built following the instructions in the [README](metrics-calculator/README.md).
+
+This will upload the packaged lambda to an S3 bucket. It will also output some configuration data that should be copied into the terraform variables file for the environment to be deployed to.
+
+### Deploying the data pipeline
+
+Once the pipeline has been built, it can be deployed by following the instructions in the [README](dashboard-infra/README.md) and using "metrics-calculator" as the stack name.
+
+### Running the data pipeline
+
+The deployed pipeline can be invoked by running:
+
+```bash
+$ ./scripts/generate-dashboard-data.sh
+```
+
+This will generate the data used by the dashboard and upload it to an S3 bucket.
+
+## Building and running the dashboard website
 
 ### Install dependencies
 
