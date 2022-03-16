@@ -87,9 +87,6 @@ def test_calculate_dashboard_metrics_from_telemetry(
             "ods_code": "",
             "ccg_name": "",
             "practice_name": "",
-            "supplier_id": "",
-            "product_id": "",
-            "date": "",
         }
     ]
     lookup_asids_mock.return_value = {
@@ -105,14 +102,15 @@ def test_calculate_dashboard_metrics_from_telemetry(
 
 
 def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
-        test_client, occurrences_mock, lookup_asids_mock, engine_mock, upload_migrations_mock):
+        test_client,
+        occurrences_mock,
+        lookup_asids_mock,
+        engine_mock,
+        upload_migrations_mock):
     migration_occurrence = {
         "ods_code": "A32323",
         "ccg_name": "Test CCG",
         "practice_name": "Test Surgery",
-        "supplier_id": "10000",
-        "product_id": "10000-001",
-        "date": "2021-11-05",
     }
     occurrences_mock.return_value = [migration_occurrence]
     lookup_asids_mock.return_value = {
