@@ -25,10 +25,48 @@ def s3(aws_credentials):
         yield boto3.resource('s3', region_name='us-east-1')
 
 
-def test_raises_exception_when_no_asids_found(s3):
+def test_raises_exception_when_bucket_is_empty(s3):
+    ods_code = "blah"
     s3.create_bucket(Bucket="test-bucket")
-    with pytest.raises(AsidLookupError):
-        lookup_asids(s3, "test-bucket", {"product_id": ""})
+    with pytest.raises(
+            AsidLookupError,
+            match=rf'No ASIDs found for the ODS code "{ods_code}"'):
+        lookup_asids(
+            s3, "test-bucket", {"ods_code": ods_code, "product_id": ""})
+
+
+def test_raises_exception_when_only_old_asid_is_found(s3):
+    ods_code = "blah"
+    asid_lookup_bucket = s3.create_bucket(Bucket="test-bucket")
+    asid_lookup_bucket.Object("asid-lookup.csv.gz").put(
+        Body=build_gzip_csv(
+            header=ASID_LOOKUP_HEADERS,
+            rows=[
+                ["1", ods_code, "", "", "EMIS Web", "", ""],
+            ],
+        ))
+    with pytest.raises(
+            AsidLookupError,
+            match=rf'Only old ASID found for the ODS code "{ods_code}"'):
+        lookup_asids(
+            s3, "test-bucket", {"ods_code": ods_code, "product_id": TPP_PRODUCT_ID})
+
+
+def test_raises_exception_when_only_new_asid_is_found(s3):
+    ods_code = "blah"
+    asid_lookup_bucket = s3.create_bucket(Bucket="test-bucket")
+    asid_lookup_bucket.Object("asid-lookup.csv.gz").put(
+        Body=build_gzip_csv(
+            header=ASID_LOOKUP_HEADERS,
+            rows=[
+                ["1", ods_code, "", "", "EMIS Web", "", ""],
+            ],
+        ))
+    with pytest.raises(
+            AsidLookupError,
+            match=rf'Only new ASID found for the ODS code "{ods_code}"'):
+        lookup_asids(
+            s3, "test-bucket", {"ods_code": ods_code, "product_id": EMIS_PRODUCT_ID})
 
 
 @pytest.mark.parametrize(

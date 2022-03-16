@@ -25,8 +25,15 @@ def lookup_asids(s3, bucket_name, migration):
             elif _is_product_of_interest(row["PName"]):
                 old = _create_result_item(row)
 
-    if old is None or new is None:
-        raise AsidLookupError()
+    if old is None and new is None:
+        raise AsidLookupError(
+            f"No ASIDs found for the ODS code \"{migration['ods_code']}\"")
+    elif old is None:
+        raise AsidLookupError(
+            f"Only new ASID found for the ODS code \"{migration['ods_code']}\"")
+    elif new is None:
+        raise AsidLookupError(
+            f"Only old ASID found for the ODS code \"{migration['ods_code']}\"")
 
     return {
         "old": {
