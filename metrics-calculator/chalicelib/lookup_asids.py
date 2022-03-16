@@ -24,6 +24,8 @@ def lookup_asids(s3, bucket_name, migration):
                 new = _create_result_item(row)
             elif _is_product_of_interest(row["PName"]):
                 old = _create_result_item(row)
+        if old is not None and new is not None:
+            break
 
     if old is None and new is None:
         raise AsidLookupError(

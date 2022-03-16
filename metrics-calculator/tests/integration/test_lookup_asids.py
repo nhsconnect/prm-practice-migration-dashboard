@@ -115,6 +115,26 @@ def test_returns_2_asids_from_same_lookup_file(
     assert lookup_result["new"]["name"] == systems[new_index]["pname"]
 
 
+def test_stops_looking_once_2_asids_found(s3):
+    ods_code = "T55555"
+    asid_lookup_bucket = s3.create_bucket(Bucket="test-bucket")
+    asid_lookup_bucket.Object("asid-lookup-1.csv.gz").put(
+        Body=build_gzip_csv(
+            header=ASID_LOOKUP_HEADERS,
+            rows=[
+                ["1", ods_code, "", "", "SystmOne", "", ""],
+                ["2", ods_code, "", "", "EMIS Web", "", ""]
+            ],
+        ))
+    asid_lookup_bucket.Object("asid-lookup-2.csv.gz").put(
+        Body="invalid",
+    )
+
+    # if the lambda tries to read the second file it will raise an exception
+    lookup_asids(
+        s3, "test-bucket", {"ods_code": ods_code, "product_id": EMIS_PRODUCT_ID})
+
+
 @pytest.mark.parametrize(
     "systems,old_index,new_index,activated_product_id",
     [
