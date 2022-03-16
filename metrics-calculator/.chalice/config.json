@@ -6,6 +6,8 @@
       "lambda_functions": {
         "calculate_dashboard_metrics_from_telemetry": {
           "environment_variables": {
+            "OCCURRENCES_BUCKET_NAME": "prm-pracmig-migration-occurrences-dev",
+            "ASID_LOOKUP_BUCKET_NAME": "prm-pracmig-asid-lookup-dev",
             "TELEMETRY_BUCKET_NAME": "prm-pracmig-telemetry-dev",
             "METRICS_BUCKET_NAME": "prm-pracmig-metrics-dev"
           }

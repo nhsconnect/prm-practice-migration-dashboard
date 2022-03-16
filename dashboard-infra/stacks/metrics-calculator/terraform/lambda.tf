@@ -11,8 +11,10 @@ resource "aws_lambda_function" "metrics_calculator_function" {
 
   environment {
     variables = {
-      TELEMETRY_BUCKET_NAME = var.telemetry_bucket_name
+      ASID_LOOKUP_BUCKET_NAME   = var.asid_lookup_bucket_name
       METRICS_BUCKET_NAME   = var.metrics_bucket_name
+      OCCURRENCES_BUCKET_NAME   = var.migration_occurrences_bucket_name
+      TELEMETRY_BUCKET_NAME = var.telemetry_bucket_name
     }
   }
 }
@@ -46,16 +48,40 @@ resource "aws_iam_policy" "metrics_calculator_function_policy" {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowReadTelemetryObjects",
+      "Sid": "AllowReadOccurrencesBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::${var.migration_occurrences_bucket_name}"
+    },
+    {
+      "Sid": "AllowReadOccurrencesObjects",
       "Effect": "Allow",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::${var.telemetry_bucket_name}/*"
+      "Resource": "arn:aws:s3:::${var.migration_occurrences_bucket_name}/*"
+    },
+    {
+      "Sid": "AllowReadAsidLookupBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::${var.asid_lookup_bucket_name}"
+    },
+    {
+      "Sid": "AllowReadAsidLookupObjects",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::${var.asid_lookup_bucket_name}/*"
     },
     {
       "Sid": "AllowReadTelemetryBucket",
       "Effect": "Allow",
       "Action": "s3:ListBucket",
       "Resource": "arn:aws:s3:::${var.telemetry_bucket_name}"
+    },
+    {
+      "Sid": "AllowReadTelemetryObjects",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::${var.telemetry_bucket_name}/*"
     },
     {
       "Sid": "AllowWriteMigrationData",
