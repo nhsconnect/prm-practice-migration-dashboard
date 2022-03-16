@@ -1,7 +1,24 @@
 import json
 import pytest
+
 from chalice.test import Client
 from unittest.mock import ANY, Mock
+
+from chalicelib.lookup_asids import AsidLookupError
+
+
+def new_telemetry_generator():
+    return (x for x in [
+        {"_time": "2021-12-05T15:42:00.000+0000"}
+    ]
+    )
+
+
+def old_telemetry_generator():
+    return (x for x in [
+        {"_time": "2021-12-01T15:42:00.000+0000"}
+    ]
+    )
 
 
 @pytest.fixture
@@ -12,15 +29,11 @@ def s3_resource_mock(monkeypatch):
 
 @pytest.fixture
 def telemetry_mock(monkeypatch):
-    old_telemetry = (x for x in [
-        {"_time": "2021-12-01T15:42:00.000+0000"}
-    ])
-    new_telemetry = (x for x in [
-        {"_time": "2021-12-05T15:42:00.000+0000"}
-    ])
-    monkeypatch.setattr(
-        "app.get_telemetry", Mock(
-            side_effect=[old_telemetry, new_telemetry]))
+    old_telemetry = old_telemetry_generator()
+    new_telemetry = new_telemetry_generator()
+    mock = Mock(side_effect=[old_telemetry, new_telemetry])
+    monkeypatch.setattr("app.get_telemetry", mock)
+    yield mock
 
 
 @pytest.fixture
@@ -118,6 +131,100 @@ def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
                 "practice_name": migration_occurrence["practice_name"],
                 "ccg_name": migration_occurrence["ccg_name"],
                 "ods_code": migration_occurrence["ods_code"],
+                "source_system": "oldy",
+                "target_system": "newy",
+            }]
+        })
+
+
+def test_ignores_asid_lookup_failures(
+        test_client,
+        occurrences_mock,
+        lookup_asids_mock,
+        engine_mock,
+        upload_migrations_mock):
+    migration_occurrence_1 = {
+        "ods_code": "A11111",
+    }
+    migration_occurrence_2 = {
+        "ods_code": "B22222",
+        "ccg_name": "Second CCG",
+        "practice_name": "Second Surgery",
+    }
+    occurrences_mock.return_value = [
+        migration_occurrence_1, migration_occurrence_2]
+
+    def fail_on_first_lookup(s3, bucket_name, migration):
+        if migration == migration_occurrence_1:
+            raise AsidLookupError("Error!")
+        return {
+            "old": {"asid": "1234", "name": "oldy"},
+            "new": {"asid": "5678", "name": "newy"}
+        }
+    lookup_asids_mock.side_effect = fail_on_first_lookup
+    engine_mock.return_value = {"ods_code": "B22222"}
+
+    test_client.lambda_.invoke(
+        "calculate_dashboard_metrics_from_telemetry")
+
+    upload_migrations_mock.assert_called_once_with(
+        ANY,
+        {
+            "migrations": [{
+                "practice_name": ANY,
+                "ccg_name": ANY,
+                "ods_code": ANY,
+                "source_system": ANY,
+                "target_system": ANY,
+            }]
+        })
+
+
+def test_calculating_metrics_for_multiple_migations(
+        test_client,
+        occurrences_mock,
+        telemetry_mock,
+        lookup_asids_mock,
+        engine_mock,
+        upload_migrations_mock):
+    migration_occurrence_1 = {
+        "ods_code": "A32323",
+        "ccg_name": "First CCG",
+        "practice_name": "First Surgery",
+    }
+    migration_occurrence_2 = {
+        "ods_code": "B22222",
+        "ccg_name": "Second CCG",
+        "practice_name": "Second Surgery",
+    }
+    occurrences_mock.return_value = [
+        migration_occurrence_1, migration_occurrence_2]
+    telemetry_mock.side_effect = [
+        old_telemetry_generator(), new_telemetry_generator(),
+        old_telemetry_generator(), new_telemetry_generator()]
+    lookup_asids_mock.return_value = {
+        "old": {"asid": "1234", "name": "oldy"},
+        "new": {"asid": "5678", "name": "newy"}
+    }
+    engine_mock.return_value = {"ods_code": "A11111"}
+
+    test_client.lambda_.invoke(
+        "calculate_dashboard_metrics_from_telemetry")
+
+    upload_migrations_mock.assert_called_once_with(
+        ANY,
+        {
+            "migrations": [{
+                "practice_name": migration_occurrence_1["practice_name"],
+                "ccg_name": migration_occurrence_1["ccg_name"],
+                "ods_code": migration_occurrence_1["ods_code"],
+                "source_system": "oldy",
+                "target_system": "newy",
+            },
+                {
+                "practice_name": migration_occurrence_2["practice_name"],
+                "ccg_name": migration_occurrence_2["ccg_name"],
+                "ods_code": migration_occurrence_2["ods_code"],
                 "source_system": "oldy",
                 "target_system": "newy",
             }]
