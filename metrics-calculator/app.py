@@ -59,12 +59,3 @@ def upload_migrations(s3, migrations):
     metrics_bucket_name = os.environ["METRICS_BUCKET_NAME"]
     write_object_s3(
         s3, f"s3://{metrics_bucket_name}/migrations.json", json.dumps(migrations))
-
-
-def get_org_details(ods_code):
-    return {
-        "practice_name": "Example practice",
-        "ccg_name": "Greater Example",
-        "source_system": "Ye Olde System",
-        "target_system": "Shiny NU",
-    }
