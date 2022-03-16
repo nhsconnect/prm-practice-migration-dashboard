@@ -74,7 +74,7 @@ def test_client(
 
 @pytest.fixture(scope="function")
 def lambda_environment_vars():
-    with open('.chalice/config.json') as f:
+    with open(".chalice/config.json") as f:
         config = json.loads(f.read())
         yield config["stages"]["dev"]["lambda_functions"][
             "calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
@@ -96,10 +96,10 @@ def test_calculate_dashboard_metrics_from_telemetry(
         "old": {"asid": "1234", "name": "oldy"},
         "new": {"asid": "5678", "name": "newy"}
     }
-    engine_mock.return_value = {"ods_code": 'A11111'}
+    engine_mock.return_value = {"ods_code": "A11111"}
 
     result = test_client.lambda_.invoke(
-        'calculate_dashboard_metrics_from_telemetry')
+        "calculate_dashboard_metrics_from_telemetry")
 
     assert result.payload == "ok"
 
@@ -119,10 +119,10 @@ def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
         "old": {"asid": "1234", "name": "oldy"},
         "new": {"asid": "5678", "name": "newy"}
     }
-    engine_mock.return_value = {"ods_code": 'A11111'}
+    engine_mock.return_value = {"ods_code": "A11111"}
 
     test_client.lambda_.invoke(
-        'calculate_dashboard_metrics_from_telemetry')
+        "calculate_dashboard_metrics_from_telemetry")
 
     upload_migrations_mock.assert_called_with(
         ANY,
