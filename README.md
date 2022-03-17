@@ -4,23 +4,23 @@ A dashboard to show metrics from practice migrations.
 
 The website is developed using the [Gatsby](https://www.gatsbyjs.com/) framework.
 
-## Data pipeline
+## Metrics calculator
 
-The dashboard uses data that is generated from a "data pipeline", written as an AWS lambda.
+The dashboard uses data that is generated from a "metrics calculator", written as an AWS lambda.
 
-### Building the data pipeline
+### Building the metrics calculator
 
-The data pipeline can be built following the instructions in the [README](metrics-calculator/README.md).
+The metrics calculator can be built following the instructions in the [README](metrics-calculator/README.md).
 
 This will upload the packaged lambda to an S3 bucket. It will also output some configuration data that should be copied into the terraform variables file for the environment to be deployed to.
 
-### Deploying the data pipeline
+### Deploying the metrics calculator
 
-Once the pipeline has been built, it can be deployed by following the instructions in the [README](dashboard-infra/README.md) and using "metrics-calculator" as the stack name.
+Once the metrics calculator has been built, it can be deployed by following the instructions in the [README](dashboard-infra/README.md) and using "metrics-calculator" as the stack name.
 
-### Running the data pipeline
+### Running the metrics calculator
 
-The deployed pipeline can be invoked by running:
+The deployed calculator can be invoked by running:
 
 ```bash
 $ ./scripts/generate-dashboard-data.sh
@@ -77,3 +77,11 @@ $ ./scripts/get-stubs.sh
 This will download the metrics and place them in the `src/data/metrics/` directory.
 
 When running the website using `npm build`, the metrics data will be automatically downloaded as a pre-build step.
+
+## Architecture
+
+The architecture for the metrics calculator can be found in the [README](metrics-calculator/README.md#architecture).
+
+The dashboard itself is a simple Gatsby website. There are no deployed environments, it is simply hosted on a developer's laptop for now.
+
+![Dashboard architecture](images/dashboard-architecture.svg)
