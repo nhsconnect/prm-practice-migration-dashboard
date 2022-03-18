@@ -1,4 +1,5 @@
 
+import boto3
 import logging
 from urllib.parse import urlparse
 
@@ -26,3 +27,8 @@ def read_object_s3(client, object_uri: str):
 def write_object_s3(client, object_uri: str, body):
     s3_object = _object_from_uri(client, object_uri)
     s3_object.put(Body=body)
+
+
+def get_s3_resource():
+    s3 = boto3.resource("s3", region_name="eu-west-2")
+    return s3
