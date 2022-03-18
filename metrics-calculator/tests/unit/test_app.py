@@ -47,6 +47,10 @@ def occurrences_mock(monkeypatch):
 @pytest.fixture
 def lookup_asids_mock(monkeypatch):
     mock = Mock()
+    mock.return_value = {
+        "old": {"asid": "", "name": ""},
+        "new": {"asid": "", "name": ""}
+    }
     monkeypatch.setattr("app.lookup_asids", mock)
     yield mock
 
@@ -54,6 +58,7 @@ def lookup_asids_mock(monkeypatch):
 @pytest.fixture
 def engine_mock(monkeypatch):
     mock = Mock()
+    mock.return_value = {"ods_code": "", "cutover_duration": 1}
     monkeypatch.setattr("app.calculate_cutover_start_and_end_date", mock)
     yield mock
 
@@ -90,10 +95,6 @@ def test_calculate_dashboard_metrics_from_telemetry(
             "practice_name": "",
         }
     ]
-    lookup_asids_mock.return_value = {
-        "old": {"asid": "1234", "name": ""},
-        "new": {"asid": "5678", "name": ""}
-    }
     engine_mock.return_value = {"ods_code": "", "cutover_duration": 1}
 
     result = test_client.lambda_.invoke(
@@ -114,11 +115,6 @@ def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
         "practice_name": "Test Surgery",
     }
     occurrences_mock.return_value = [migration_occurrence]
-    lookup_asids_mock.return_value = {
-        "old": {"asid": "1234", "name": "oldy"},
-        "new": {"asid": "5678", "name": "newy"}
-    }
-    engine_mock.return_value = {"ods_code": "", "cutover_duration": 1}
 
     test_client.lambda_.invoke(
         "calculate_dashboard_metrics_from_telemetry")
@@ -163,7 +159,6 @@ def test_ignores_asid_lookup_failures(
             "new": {"asid": "", "name": ""}
         }
     lookup_asids_mock.side_effect = fail_on_first_lookup
-    engine_mock.return_value = {"ods_code": "", "cutover_duration": 1}
 
     test_client.lambda_.invoke(
         "calculate_dashboard_metrics_from_telemetry")
@@ -183,7 +178,7 @@ def test_ignores_asid_lookup_failures(
         })
 
 
-def test_includes_metrics_for_multiple_migations(
+def test_includes_metrics_for_multiple_migrations(
         test_client,
         occurrences_mock,
         telemetry_mock,
@@ -205,11 +200,6 @@ def test_includes_metrics_for_multiple_migations(
     telemetry_mock.side_effect = [
         old_telemetry_generator(), new_telemetry_generator(),
         old_telemetry_generator(), new_telemetry_generator()]
-    lookup_asids_mock.return_value = {
-        "old": {"asid": "", "name": ""},
-        "new": {"asid": "", "name": ""}
-    }
-    engine_mock.return_value = {"ods_code": "A11111", "cutover_duration": 1}
 
     test_client.lambda_.invoke(
         "calculate_dashboard_metrics_from_telemetry")
@@ -263,11 +253,6 @@ def test_calculates_average_cutover_duration_to_one_decimal_place(
     # https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-a-list-of-lists
     telemetry_mock.side_effect = chain(
         *map(lambda _: (old_telemetry_generator(), new_telemetry_generator()), durations))
-    lookup_asids_mock.return_value = {
-        "old": {"asid": "1234", "name": "oldy"},
-        "new": {"asid": "5678", "name": "newy"}
-    }
-    engine_mock.return_value = {"ods_code": "A11111"}
     engine_mock.side_effect = map(
         lambda x: {"ods_code": "", "cutover_duration": x}, durations)
 
