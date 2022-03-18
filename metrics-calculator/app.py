@@ -1,6 +1,8 @@
+from decimal import ROUND_HALF_UP, Decimal
 import json
 import logging
 import os
+from statistics import fmean
 from chalice import Chalice
 
 from chalicelib.lookup_asids import AsidLookupError, lookup_asids
@@ -50,7 +52,9 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
         except AsidLookupError:
             logging.error("Couldn't find ASIDs for migration", exc_info=True)
 
-    migrations = {"migrations": metrics}
+    mean_cutover = calculate_mean_cutover(metrics)
+
+    migrations = {"mean_cutover_duration": mean_cutover, "migrations": metrics}
     upload_migrations(s3, migrations)
     return "ok"
 
@@ -59,3 +63,11 @@ def upload_migrations(s3, migrations):
     metrics_bucket_name = os.environ["METRICS_BUCKET_NAME"]
     write_object_s3(
         s3, f"s3://{metrics_bucket_name}/migrations.json", json.dumps(migrations))
+
+
+def calculate_mean_cutover(metrics):
+    durations = map(lambda x: x["cutover_duration"], metrics)
+    mean = fmean(durations)
+    rounded_mean = Decimal(mean).quantize(
+        Decimal('.1'), rounding=ROUND_HALF_UP)
+    return f"{rounded_mean}"

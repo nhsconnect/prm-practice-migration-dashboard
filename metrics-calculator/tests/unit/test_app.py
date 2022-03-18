@@ -1,3 +1,4 @@
+from itertools import chain
 import json
 import pytest
 
@@ -90,10 +91,10 @@ def test_calculate_dashboard_metrics_from_telemetry(
         }
     ]
     lookup_asids_mock.return_value = {
-        "old": {"asid": "1234", "name": "oldy"},
-        "new": {"asid": "5678", "name": "newy"}
+        "old": {"asid": "1234", "name": ""},
+        "new": {"asid": "5678", "name": ""}
     }
-    engine_mock.return_value = {"ods_code": "A11111"}
+    engine_mock.return_value = {"ods_code": "", "cutover_duration": 1}
 
     result = test_client.lambda_.invoke(
         "calculate_dashboard_metrics_from_telemetry")
@@ -117,7 +118,7 @@ def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
         "old": {"asid": "1234", "name": "oldy"},
         "new": {"asid": "5678", "name": "newy"}
     }
-    engine_mock.return_value = {"ods_code": "A11111"}
+    engine_mock.return_value = {"ods_code": "", "cutover_duration": 1}
 
     test_client.lambda_.invoke(
         "calculate_dashboard_metrics_from_telemetry")
@@ -125,12 +126,14 @@ def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
     upload_migrations_mock.assert_called_with(
         ANY,
         {
+            "mean_cutover_duration": ANY,
             "migrations": [{
                 "practice_name": migration_occurrence["practice_name"],
                 "ccg_name": migration_occurrence["ccg_name"],
                 "ods_code": migration_occurrence["ods_code"],
-                "source_system": "oldy",
-                "target_system": "newy",
+                "source_system": ANY,
+                "target_system": ANY,
+                "cutover_duration": ANY
             }]
         })
 
@@ -146,8 +149,8 @@ def test_ignores_asid_lookup_failures(
     }
     migration_occurrence_2 = {
         "ods_code": "B22222",
-        "ccg_name": "Second CCG",
-        "practice_name": "Second Surgery",
+        "ccg_name": "",
+        "practice_name": "",
     }
     occurrences_mock.return_value = [
         migration_occurrence_1, migration_occurrence_2]
@@ -156,11 +159,11 @@ def test_ignores_asid_lookup_failures(
         if migration == migration_occurrence_1:
             raise AsidLookupError("Error!")
         return {
-            "old": {"asid": "1234", "name": "oldy"},
-            "new": {"asid": "5678", "name": "newy"}
+            "old": {"asid": "", "name": ""},
+            "new": {"asid": "", "name": ""}
         }
     lookup_asids_mock.side_effect = fail_on_first_lookup
-    engine_mock.return_value = {"ods_code": "B22222"}
+    engine_mock.return_value = {"ods_code": "", "cutover_duration": 1}
 
     test_client.lambda_.invoke(
         "calculate_dashboard_metrics_from_telemetry")
@@ -168,17 +171,19 @@ def test_ignores_asid_lookup_failures(
     upload_migrations_mock.assert_called_once_with(
         ANY,
         {
+            "mean_cutover_duration": "1.0",
             "migrations": [{
                 "practice_name": ANY,
                 "ccg_name": ANY,
                 "ods_code": ANY,
                 "source_system": ANY,
                 "target_system": ANY,
+                "cutover_duration": ANY
             }]
         })
 
 
-def test_calculating_metrics_for_multiple_migations(
+def test_includes_metrics_for_multiple_migations(
         test_client,
         occurrences_mock,
         telemetry_mock,
@@ -201,10 +206,10 @@ def test_calculating_metrics_for_multiple_migations(
         old_telemetry_generator(), new_telemetry_generator(),
         old_telemetry_generator(), new_telemetry_generator()]
     lookup_asids_mock.return_value = {
-        "old": {"asid": "1234", "name": "oldy"},
-        "new": {"asid": "5678", "name": "newy"}
+        "old": {"asid": "", "name": ""},
+        "new": {"asid": "", "name": ""}
     }
-    engine_mock.return_value = {"ods_code": "A11111"}
+    engine_mock.return_value = {"ods_code": "A11111", "cutover_duration": 1}
 
     test_client.lambda_.invoke(
         "calculate_dashboard_metrics_from_telemetry")
@@ -212,18 +217,66 @@ def test_calculating_metrics_for_multiple_migations(
     upload_migrations_mock.assert_called_once_with(
         ANY,
         {
-            "migrations": [{
-                "practice_name": migration_occurrence_1["practice_name"],
-                "ccg_name": migration_occurrence_1["ccg_name"],
-                "ods_code": migration_occurrence_1["ods_code"],
-                "source_system": "oldy",
-                "target_system": "newy",
-            },
+            "mean_cutover_duration": ANY,
+            "migrations": [
                 {
-                "practice_name": migration_occurrence_2["practice_name"],
-                "ccg_name": migration_occurrence_2["ccg_name"],
-                "ods_code": migration_occurrence_2["ods_code"],
-                "source_system": "oldy",
-                "target_system": "newy",
-            }]
+                    "practice_name": migration_occurrence_1["practice_name"],
+                    "ccg_name": migration_occurrence_1["ccg_name"],
+                    "ods_code": migration_occurrence_1["ods_code"],
+                    "source_system": ANY,
+                    "target_system": ANY,
+                    "cutover_duration": ANY
+                },
+                {
+                    "practice_name": migration_occurrence_2["practice_name"],
+                    "ccg_name": migration_occurrence_2["ccg_name"],
+                    "ods_code": migration_occurrence_2["ods_code"],
+                    "source_system": ANY,
+                    "target_system": ANY,
+                    "cutover_duration": ANY
+                }]
+        })
+
+
+@pytest.mark.parametrize(
+    "durations,expected_average",
+    [
+        ([1], "1.0"),
+        ([1, 1], "1.0"),
+        ([4, 2], "3.0"),
+        ([4, 3], "3.5"),
+        ([2, 1, 1, 1], "1.3"),
+        ([2, 1, 1, 1, 1, 1, 1], "1.1"),
+    ])
+def test_calculates_average_cutover_duration_to_one_decimal_place(
+        test_client,
+        occurrences_mock,
+        telemetry_mock,
+        lookup_asids_mock,
+        engine_mock,
+        upload_migrations_mock,
+        durations,
+        expected_average):
+    occurrences_mock.return_value = map(
+        lambda x: {"ods_code": "", "ccg_name": "", "practice_name": ""}, durations)
+    # The use of chain here is inspired by the answer to this Stack Overflow question:
+    # https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-a-list-of-lists
+    telemetry_mock.side_effect = chain(
+        *map(lambda _: (old_telemetry_generator(), new_telemetry_generator()), durations))
+    lookup_asids_mock.return_value = {
+        "old": {"asid": "1234", "name": "oldy"},
+        "new": {"asid": "5678", "name": "newy"}
+    }
+    engine_mock.return_value = {"ods_code": "A11111"}
+    engine_mock.side_effect = map(
+        lambda x: {"ods_code": "", "cutover_duration": x}, durations)
+
+    test_client.lambda_.invoke(
+        "calculate_dashboard_metrics_from_telemetry")
+
+    upload_migrations_mock.assert_called_once_with(
+        ANY,
+        {
+            "mean_cutover_duration": expected_average,
+            "migrations": ANY
         })
