@@ -66,16 +66,18 @@ def test_calculate_dashboard_metrics_from_telemetry(
     migrations_obj = metrics_bucket.Object("migrations.json").get()
     migrations_body = migrations_obj['Body'].read().decode('utf-8')
 
-    assert json.loads(migrations_body) == {"migrations": [{
-        "cutover_startdate": "2021-12-02T15:42:00+00:00",
-        "cutover_enddate": "2021-12-05T15:42:00+00:00",
-        "cutover_duration": 3,
-        "ccg_name": ccg,
-        "practice_name": practice,
-        "source_system": "SystmOne",
-        "target_system": "EMIS Web",
-        "ods_code": ods_code
-    }]}
+    assert json.loads(migrations_body) == {
+        "mean_cutover_duration": "3.0",
+        "migrations": [{
+            "cutover_startdate": "2021-12-02T15:42:00+00:00",
+            "cutover_enddate": "2021-12-05T15:42:00+00:00",
+            "cutover_duration": 3,
+            "ccg_name": ccg,
+            "practice_name": practice,
+            "source_system": "SystmOne",
+            "target_system": "EMIS Web",
+            "ods_code": ods_code
+        }]}
 
 
 def create_occurrences_data(occurrences_bucket_name, s3, ods_code, ccg, practice):
