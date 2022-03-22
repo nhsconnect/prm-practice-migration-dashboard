@@ -1,4 +1,4 @@
 {
-  "meanCutoverDurationLabel": "Average cutover duration",
+  "meanCutoverDurationLabel": "Average cutover elapsed time",
   "meanCutoverDurationUnit": "Days"
 }
