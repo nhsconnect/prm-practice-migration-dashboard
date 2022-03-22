@@ -21,25 +21,33 @@ jest.mock(
   { virtual: true }
 );
 
-it("renders a table", () => {
-  render(<IndexPage />);
+describe("index", () => {
 
-  expect(screen.queryByText(`${content.meanCutoverDurationLabel}:`)).toBeTruthy();
-  expect(screen.queryByText(`12.0 ${content.meanCutoverDurationUnit}`)).toBeTruthy();
+  it("renders a table", () => {
+    render(<IndexPage/>);
 
-  expect(screen.queryByText("Cutover Start Date")).toBeTruthy();
-  expect(screen.queryByText("Cutover End Date")).toBeTruthy();
-  expect(screen.queryByText("Practice Name")).toBeTruthy();
-  expect(screen.queryByText("CCG Name")).toBeTruthy();
-  expect(screen.queryByText("Source System")).toBeTruthy();
-  expect(screen.queryByText("Target System")).toBeTruthy();
-  expect(screen.queryByText("Cutover Duration (Days)")).toBeTruthy();
+    expect(screen.queryByText("Cutover Start Date")).toBeTruthy();
+    expect(screen.queryByText("Cutover End Date")).toBeTruthy();
+    expect(screen.queryByText("Practice Name")).toBeTruthy();
+    expect(screen.queryByText("CCG Name")).toBeTruthy();
+    expect(screen.queryByText("Source System")).toBeTruthy();
+    expect(screen.queryByText("Target System")).toBeTruthy();
+    expect(screen.queryByText("Cutover Duration (Days)")).toBeTruthy();
 
-  expect(screen.queryByText("01/01/2022")).toBeTruthy();
-  expect(screen.queryByText("12/01/2022")).toBeTruthy();
-  expect(screen.queryByText("Bury")).toBeTruthy();
-  expect(screen.queryByText("Greater Manchester")).toBeTruthy();
-  expect(screen.queryByText("EMIS Web")).toBeTruthy();
-  expect(screen.queryByText("TTP SystemOne")).toBeTruthy();
-  expect(screen.queryByText("12")).toBeTruthy();
+    expect(screen.queryByText("01/01/2022")).toBeTruthy();
+    expect(screen.queryByText("12/01/2022")).toBeTruthy();
+    expect(screen.queryByText("Bury")).toBeTruthy();
+    expect(screen.queryByText("Greater Manchester")).toBeTruthy();
+    expect(screen.queryByText("EMIS Web")).toBeTruthy();
+    expect(screen.queryByText("TTP SystemOne")).toBeTruthy();
+    expect(screen.queryByText("12")).toBeTruthy();
+  });
+
+  it("renders the mean cutover duration stat", () => {
+    render(<IndexPage/>);
+
+    expect(screen.queryByText(`${content.meanCutoverDurationLabel}:`)).toBeTruthy();
+    expect(screen.queryByText(`12.0 ${content.meanCutoverDurationUnit}`)).toBeTruthy();
+  });
+
 });
