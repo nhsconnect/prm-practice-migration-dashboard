@@ -10,7 +10,8 @@ const IndexPage: FC = () => {
     return (
   <Layout>
       <h2>General Statistics</h2>
-      <MigrationStat
+      <p data-testid="observation-notice">This data has been derived from <strong>{migrations.migrations.length}</strong> observed practice migration(s).</p>
+    <MigrationStat
           label={content.meanCutoverDurationLabel}
           value={migrations.mean_cutover_duration}
           unit={content.meanCutoverDurationUnit} />

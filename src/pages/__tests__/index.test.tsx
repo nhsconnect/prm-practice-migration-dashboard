@@ -50,4 +50,10 @@ describe("index", () => {
     expect(screen.queryByText(`12.0 ${content.meanCutoverDurationUnit}`)).toBeTruthy();
   });
 
+  it("renders notification of observed migrations", () => {
+    render(<IndexPage/>);
+
+    expect(screen.getByTestId("observation-notice").textContent)
+        .toBe("This data has been derived from 1 observed practice migration(s).");
+  });
 });
