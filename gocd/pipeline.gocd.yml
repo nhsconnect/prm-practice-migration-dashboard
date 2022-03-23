@@ -18,4 +18,4 @@ pipelines:
                     command: /bin/bash
                     arguments:
                       - -c
-                      - echo "Success!"
+                      - ./metrics-calculator/tasks dojo-test
