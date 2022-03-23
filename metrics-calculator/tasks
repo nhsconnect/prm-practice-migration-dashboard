@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -Eeo pipefail
+
+task="$1"
+script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+
+case "${task}" in
+  dojo-test)
+      dojo -c "${script_dir}/Dojofile" "./tasks test"
+      ;;
+  test)
+      python -m venv venv39
+      . venv39/bin/activate
+      pip install -r "${script_dir}/requirements.txt"
+      pytest -s
+      ;;
+  *)
+      echo "Invalid command: '${task}'"
+      exit 1
+      ;;
+esac
+
+set +e
