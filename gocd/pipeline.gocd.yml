@@ -1,4 +1,4 @@
-format_version: 4
+format_version: 10
 pipelines:
   "prm-practice-migration-dashboard":
     group: practice-migrations
@@ -7,7 +7,7 @@ pipelines:
       git:
         type: configrepo
     stages:
-      - test:
+      - metrics_calculator:
           clean_workspace: true
           jobs:
             test:
@@ -19,3 +19,15 @@ pipelines:
                     arguments:
                       - -c
                       - ./metrics-calculator/tasks dojo-test
+      - performance_dashboard:
+          clean_workspace: true
+          jobs:
+            test:
+              resources:
+                - docker
+              tasks:
+                - exec:
+                    command: /bin/bash
+                    arguments:
+                      - -c
+                      - ./tasks dojo-test
