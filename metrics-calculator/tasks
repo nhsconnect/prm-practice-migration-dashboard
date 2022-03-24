@@ -4,11 +4,12 @@ set -Eeo pipefail
 
 task="$1"
 script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd "${script_dir}"
 
 
 case "${task}" in
   dojo-test)
-      dojo -c "${script_dir}/Dojofile" "./metrics-calculator/tasks test"
+      dojo -c "${script_dir}/Dojofile" "./tasks test"
       ;;
   test)
       python -m venv venv39
