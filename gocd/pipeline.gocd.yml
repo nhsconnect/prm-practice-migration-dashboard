@@ -25,6 +25,9 @@ pipelines:
             test:
               resources:
                 - docker
+              artifacts:
+                - test_coverage:
+                  source: coverage/
               tasks:
                 - exec:
                     command: /bin/bash
