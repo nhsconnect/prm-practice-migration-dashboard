@@ -6,7 +6,7 @@ import { Header } from "nhsuk-react-components";
 
 interface HeaderProps {}
 
-export const HeaderContainer: FC<HeaderProps> = () => (
+const HeaderContainer: FC<HeaderProps> = () => (
   <Header transactional>
     <Header.Container>
       <Header.Logo href="/" />
