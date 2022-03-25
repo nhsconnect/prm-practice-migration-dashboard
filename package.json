@@ -57,6 +57,7 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "test": "jest --watch",
+    "test:ci": "jest --coverage",
     "get:migrations": "./scripts/get-dashboard-data.sh"
   },
   "repository": {
