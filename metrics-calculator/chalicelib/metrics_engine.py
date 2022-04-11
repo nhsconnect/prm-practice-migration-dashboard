@@ -1,9 +1,6 @@
 import itertools
-from datetime import datetime
 
 from dateutil.parser import *
-import pytz
-import functools
 
 def first_message_below_threshold(old_asid_extract_generator, threshold):
     reversed_extract_dates_list = reversed(list(old_asid_extract_generator))
