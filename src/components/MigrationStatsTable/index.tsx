@@ -21,7 +21,9 @@ function formatDate(isoDateTime?: string): string {
   if (!isoDateTime) {
     return "—";
   }
-  return DateTime.fromISO(isoDateTime).toFormat("dd/MM/yyyy");
+  return DateTime.fromISO(isoDateTime).toLocaleString(
+    DateTime.DATE_MED_WITH_WEEKDAY
+  );
 }
 
 export const MigrationStatsTable: FC<MigrationStatsTableProps> = ({

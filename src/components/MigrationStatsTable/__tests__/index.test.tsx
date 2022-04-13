@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import MigrationStatsTable from "../index";
 
@@ -30,13 +31,13 @@ it("renders a table", () => {
   expect(screen.queryByText("Target System")).toBeTruthy();
   expect(screen.queryByText("Cutover Duration (Days)")).toBeTruthy();
 
-  expect(screen.queryByText("01/01/2022")).toBeTruthy();
-  expect(screen.queryByText("12/01/2022")).toBeTruthy();
-  expect(screen.queryByText("Bury")).toBeTruthy();
-  expect(screen.queryByText("Greater Manchester")).toBeTruthy();
-  expect(screen.queryByText("EMIS Web")).toBeTruthy();
-  expect(screen.queryByText("TTP SystemOne")).toBeTruthy();
-  expect(screen.queryByText("12")).toBeTruthy();
+  expect(screen.getByText("Sat, 1 Jan 2022")).toBeInTheDocument();
+  expect(screen.getByText("Wed, 12 Jan 2022")).toBeInTheDocument();
+  expect(screen.getByText("Bury")).toBeInTheDocument();
+  expect(screen.getByText("Greater Manchester")).toBeInTheDocument();
+  expect(screen.getByText("EMIS Web")).toBeInTheDocument();
+  expect(screen.getByText("TTP SystemOne")).toBeInTheDocument();
+  expect(screen.getByText("12")).toBeInTheDocument();
 });
 
 it("handles missing fields", () => {
