@@ -1,5 +1,3 @@
-import itertools
-
 from dateutil.parser import *
 
 

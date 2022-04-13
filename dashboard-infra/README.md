@@ -50,3 +50,20 @@ $ ./tasks dojo-apply <stack-name> <stack-environment>
 
 - `stack-name`: the name of the stack to apply (matching one of the directories under the `stacks/`)
 - `stack-environment`: the name of the environment to apply the changes to.
+
+## Troubleshooting
+
+### Problem
+
+```shell
+Error: Failed to validate installed provider
+
+Validating provider hashicorp/aws v4.9.0 failed: selected package for
+registry.terraform.io/hashicorp/aws is no longer present in the target
+directory; this is a bug in Terraform
+```
+
+### Solution
+
+delete the .terraform directory
+
