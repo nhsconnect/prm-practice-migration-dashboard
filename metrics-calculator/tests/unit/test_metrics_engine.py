@@ -30,6 +30,6 @@ def test_calculate_cutover_start_and_end_date():
 
     assert result == {
         "cutover_startdate": "2021-12-02T00:00:00+00:00",
-        "cutover_enddate": "2021-12-05T00:00:00+00:00",
-        "cutover_duration": 3,
+        "cutover_enddate": "2021-12-06T00:00:00+00:00",
+        "cutover_duration": 4,
     }
