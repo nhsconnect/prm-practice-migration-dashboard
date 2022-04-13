@@ -8,25 +8,41 @@ def index_of_entry_above_threshold(activity_per_day, threshold):
     raise Exception("Invalid data - none exceeds threshold")
 
 
-def calculate_cutover_start_and_end_date(old_asid_extract_generator, new_asid_extract_generator):
-    old_asid_activity_per_day = list(old_asid_extract_generator)
-    new_asid_activity_per_day = list(new_asid_extract_generator)
-    first_day = old_asid_activity_per_day[0]
-    threshold = float(first_day["avgmin2std"])
-    reversed_old_asid_activity = list(reversed(old_asid_activity_per_day))
-    index_for_old = index_of_entry_above_threshold(
-        reversed_old_asid_activity, threshold)
-    old_asid_newest_message_date = isoparse(
-        reversed_old_asid_activity[index_for_old - 1]["_time"])
-    index_for_new = index_of_entry_above_threshold(
-        new_asid_activity_per_day, threshold)
-    new_asid_oldest_message_date = isoparse(
-        new_asid_activity_per_day[index_for_new]["_time"])
+def calculate_cutover_start_and_end_date(stats_preceding_cutover, stats_following_cutover):
+    stats_preceding_cutover_list = list(stats_preceding_cutover)
+    stats_following_cutover_list = list(stats_following_cutover)
 
-    cutover_duration = new_asid_oldest_message_date - old_asid_newest_message_date
+    # The stats are in chronological order, so to search backwards for cutover start,
+    # we reverse the order
+    reversed_stats_preceding_cutover = list(
+        reversed(stats_preceding_cutover_list))
 
+    threshold = calculate_threshold(stats_preceding_cutover_list)
+
+    cutover_start_date = find_date_of_entry_above_threshold(
+        reversed_stats_preceding_cutover, threshold, -1)
+
+    cutover_end_date = find_date_of_entry_above_threshold(
+        stats_following_cutover_list, threshold)
+
+    cutover_duration = cutover_end_date - cutover_start_date
     return {
-        "cutover_startdate": old_asid_newest_message_date.isoformat(),
-        "cutover_enddate": new_asid_oldest_message_date.isoformat(),
+        "cutover_startdate": cutover_start_date.isoformat(),
+        "cutover_enddate": cutover_end_date.isoformat(),
         "cutover_duration": cutover_duration.days
     }
+
+
+def find_date_of_entry_above_threshold(events_per_day_list, threshold, offset=0):
+    index = index_of_entry_above_threshold(
+        events_per_day_list, threshold)
+
+    day_stats = events_per_day_list[index + offset]
+
+    return isoparse(day_stats["_time"])
+
+
+def calculate_threshold(old_asid_activity_per_day):
+    first_day = old_asid_activity_per_day[0]
+    threshold = float(first_day["avgmin2std"])
+    return threshold
