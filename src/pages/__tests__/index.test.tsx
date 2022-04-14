@@ -14,7 +14,8 @@ jest.mock(
         cutover_startdate: "2022-01-01T02:03:04Z",
         cutover_enddate: "2022-01-12T04:03:02Z",
         practice_name: "Bury",
-        ccg_name: "Greater Manchester",
+        ods_code: "A12345",
+        ccg_name: "Greater Manchester CCG",
         source_system: "EMIS Web",
         target_system: "TTP SystemOne",
         cutover_duration: 12,
@@ -38,8 +39,8 @@ describe("index", () => {
 
     expect(screen.getByText("Sat, 1 Jan 2022")).toBeInTheDocument();
     expect(screen.getByText("Wed, 12 Jan 2022")).toBeInTheDocument();
-    expect(screen.getByText("Bury")).toBeInTheDocument();
-    expect(screen.getByText("Greater Manchester")).toBeInTheDocument();
+    expect(screen.getByText("Bury (A12345)")).toBeInTheDocument();
+    expect(screen.getByText("Greater Manchester CCG")).toBeInTheDocument();
     expect(screen.getByText("EMIS Web")).toBeInTheDocument();
     expect(screen.getByText("TTP SystemOne")).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();

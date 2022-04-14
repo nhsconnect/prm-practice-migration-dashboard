@@ -7,6 +7,7 @@ interface MigrationStat {
   cutover_startdate?: string;
   cutover_enddate?: string;
   practice_name?: string;
+  ods_code?: string;
   ccg_name?: string;
   source_system?: string;
   target_system?: string;
@@ -24,6 +25,13 @@ function formatDate(isoDateTime?: string): string {
   return DateTime.fromISO(isoDateTime).toLocaleString(
     DateTime.DATE_MED_WITH_WEEKDAY
   );
+}
+
+function formatPracticeName(practice_name?: string, ods_code?: string): string {
+  if (!practice_name) {
+    return "—";
+  }
+  return `${practice_name} (${ods_code})`;
 }
 
 export const MigrationStatsTable: FC<MigrationStatsTableProps> = ({
@@ -46,7 +54,9 @@ export const MigrationStatsTable: FC<MigrationStatsTableProps> = ({
         <Table.Row key={migration.practice_name ?? index}>
           <Table.Cell>{formatDate(migration.cutover_startdate)}</Table.Cell>
           <Table.Cell>{formatDate(migration.cutover_enddate)}</Table.Cell>
-          <Table.Cell>{migration.practice_name ?? "—"}</Table.Cell>
+          <Table.Cell>
+            {formatPracticeName(migration.practice_name, migration.ods_code)}
+          </Table.Cell>
           <Table.Cell>{migration.ccg_name ?? "—"}</Table.Cell>
           <Table.Cell>{migration.source_system ?? "—"}</Table.Cell>
           <Table.Cell>{migration.target_system ?? "—"}</Table.Cell>
