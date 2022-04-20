@@ -14,8 +14,8 @@ from chalicelib.telemetry import get_telemetry
 app = Chalice(app_name='metrics-calculator')
 
 
-@app.route('/metrics', methods=['POST'])
-def calculate_dashboard_metrics_from_telemetry():
+@app.lambda_function()
+def calculate_dashboard_metrics_from_telemetry(event, context):
     occurrences_bucket_name = os.environ['OCCURRENCES_BUCKET_NAME']
     asid_lookup_bucket_name = os.environ['ASID_LOOKUP_BUCKET_NAME']
     telemetry_bucket_name = os.environ['TELEMETRY_BUCKET_NAME']
@@ -55,7 +55,10 @@ def calculate_dashboard_metrics_from_telemetry():
     if len(metrics) > 0:
         mean_cutover = calculate_mean_cutover(metrics)
 
-        migrations = {"mean_cutover_duration": mean_cutover, "migrations": metrics}
+        migrations = {
+            "mean_cutover_duration": mean_cutover,
+            "migrations": metrics
+        }
         upload_migrations(s3, migrations)
 
     return "ok"

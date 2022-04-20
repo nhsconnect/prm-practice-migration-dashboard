@@ -4,7 +4,7 @@
   "stages": {
     "dev": {
       "lambda_functions": {
-        "api_handler": {
+        "calculate_dashboard_metrics_from_telemetry": {
           "environment_variables": {
             "OCCURRENCES_BUCKET_NAME": "prm-pracmig-migration-occurrences-dev",
             "ASID_LOOKUP_BUCKET_NAME": "prm-pracmig-asid-lookup-dev",

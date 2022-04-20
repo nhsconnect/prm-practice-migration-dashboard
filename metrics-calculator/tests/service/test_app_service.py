@@ -37,7 +37,7 @@ def test_client():
 def lambda_environment_vars():
     with open('.chalice/config.json') as f:
         config = json.loads(f.read())
-        yield config["stages"]["dev"]["lambda_functions"]["api_handler"]["environment_variables"]
+        yield config["stages"]["dev"]["lambda_functions"]["calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
 
 
 def test_calculate_dashboard_metrics_from_telemetry(
@@ -58,8 +58,9 @@ def test_calculate_dashboard_metrics_from_telemetry(
     create_telemetry_data(telemetry_bucket_name, s3, old_asid, new_asid)
     metrics_bucket = create_metrics_bucket(metrics_bucket_name, s3)
 
-    response = test_client.http.post('/metrics')
-    assert response.status_code == 200
+    response = test_client.lambda_.invoke(
+        'calculate_dashboard_metrics_from_telemetry')
+    assert response.payload == "ok"
 
     migrations_obj = metrics_bucket.Object("migrations.json").get()
     migrations_body = migrations_obj['Body'].read().decode('utf-8')
