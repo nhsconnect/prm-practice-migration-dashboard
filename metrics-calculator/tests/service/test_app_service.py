@@ -31,15 +31,13 @@ def test_client():
     from app import app
     with Client(app) as client:
         yield client
-    sys.modules.pop('app')
 
 
 @pytest.fixture(scope="function")
 def lambda_environment_vars():
     with open('.chalice/config.json') as f:
         config = json.loads(f.read())
-        yield config["stages"]["dev"]["lambda_functions"][
-            "calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
+        yield config["stages"]["dev"]["lambda_functions"]["api_handler"]["environment_variables"]
 
 
 def test_calculate_dashboard_metrics_from_telemetry(
@@ -60,18 +58,18 @@ def test_calculate_dashboard_metrics_from_telemetry(
     create_telemetry_data(telemetry_bucket_name, s3, old_asid, new_asid)
     metrics_bucket = create_metrics_bucket(metrics_bucket_name, s3)
 
-    test_client.lambda_.invoke(
-        'calculate_dashboard_metrics_from_telemetry')
+    response = test_client.http.post('/metrics')
+    assert response.status_code == 200
 
     migrations_obj = metrics_bucket.Object("migrations.json").get()
     migrations_body = migrations_obj['Body'].read().decode('utf-8')
 
     assert json.loads(migrations_body) == {
-        "mean_cutover_duration": "4.0",
+        "mean_cutover_duration": "3.0",
         "migrations": [{
-            "cutover_startdate": "2021-12-02T00:00:00+00:00",
-            "cutover_enddate": "2021-12-06T00:00:00+00:00",
-            "cutover_duration": 4,
+            "cutover_startdate": "2021-12-02T15:42:00+00:00",
+            "cutover_enddate": "2021-12-05T15:42:00+00:00",
+            "cutover_duration": 3,
             "ccg_name": ccg,
             "practice_name": practice,
             "source_system": "SystmOne",
@@ -114,22 +112,22 @@ def create_telemetry_data(bucket_name, s3, old_asid, new_asid):
     telemetry_bucket = s3.create_bucket(Bucket=bucket_name)
     telemetry_bucket.Object(f"{old_asid}-telemetry.csv.gz").put(
         Body=build_gzip_csv(
-            header=["_time", "count", "avgmin2std"],
-            rows=[["2021-11-25T00:00:00.000+0000", "2000", "1044.7268404372467"],
-                  ["2021-11-26T00:00:00.000+0000", "2854", "1044.7268404372467"],
-                  ["2021-11-27T00:00:00.000+0000", "2754", "1044.7268404372467"],
-                  ["2021-12-02T00:00:00.000+0000", "200", "1044.7268404372467"],
-                  ["2021-12-03T00:00:00.000+0000", "200", "1044.7268404372467"],
-                  ["2021-12-04T00:00:00.000+0000", "200", "1044.7268404372467"]],
+            header=["_time","count","avgmin2std"],
+            rows=[["2021-11-25T00:00:00.000+0000","2000","1044.7268404372467"],
+                  ["2021-11-26T00:00:00.000+0000","2854","1044.7268404372467"],
+                  ["2021-11-27T00:00:00.000+0000","2754","1044.7268404372467"],
+                  ["2021-12-02T15:42:00.000+0000","200","1044.7268404372467"],
+                  ["2021-12-03T15:42:00.000+0000","200","1044.7268404372467"],
+                  ["2021-12-04T15:42:00.000+0000","200","1044.7268404372467"]],
         )
     )
     telemetry_bucket.Object(f"{new_asid}-telemetry.csv.gz").put(
         Body=build_gzip_csv(
-            header=["_time", "count", "avgmin2std"],
-            rows=[["2021-12-05T00:00:00.000+0000", "300", "1044.7268404372467"],
-                  ["2021-12-06T00:00:00.000+0000", "2854", "1044.7268404372467"],
-                  ["2021-12-07T00:00:00.000+0000", "2754", "1044.7268404372467"],
-                  ["2021-12-08T00:00:00.000+0000", "2554", "1044.7268404372467"]],
+            header=["_time","count","avgmin2std"],
+            rows=[["2021-12-05T15:42:00.000+0000","300","1044.7268404372467"],
+                  ["2021-12-06T00:00:00.000+0000","2854","1044.7268404372467"],
+                  ["2021-12-07T00:00:00.000+0000","2754","1044.7268404372467"],
+                  ["2021-12-08T00:00:00.000+0000","2554","1044.7268404372467"]],
         )
     )
 

@@ -1,10 +1,11 @@
+import os
 from itertools import chain
 import json
 import pytest
 
-from chalice.test import Client
 from unittest.mock import ANY, Mock
 
+from app import calculate_dashboard_metrics_from_telemetry
 from chalicelib.lookup_asids import AsidLookupError
 
 
@@ -39,7 +40,7 @@ def telemetry_mock(monkeypatch):
 
 @pytest.fixture
 def occurrences_mock(monkeypatch):
-    mock = Mock()
+    mock = Mock(return_value=[])
     monkeypatch.setattr("app.get_migration_occurrences", mock)
     yield mock
 
@@ -71,40 +72,34 @@ def upload_migrations_mock(monkeypatch):
 
 
 @pytest.fixture(scope="function")
-def test_client(
-        telemetry_mock, occurrences_mock, s3_resource_mock):
-    from app import app
-    with Client(app) as client:
-        yield client
+def mock_defaults(
+        s3_resource_mock, lambda_environment_vars, telemetry_mock, occurrences_mock):
+    pass
 
 
 @pytest.fixture(scope="function")
 def lambda_environment_vars():
     with open(".chalice/config.json") as f:
         config = json.loads(f.read())
+        vars = config["stages"]["dev"]["lambda_functions"]["api_handler"]["environment_variables"]
+        for key in vars:
+            os.environ[key] = vars[key]
         yield config["stages"]["dev"]["lambda_functions"][
-            "calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
+            "api_handler"]["environment_variables"]
 
 
-def test_calculate_dashboard_metrics_from_telemetry(
-        test_client, occurrences_mock, lookup_asids_mock, engine_mock):
-    occurrences_mock.return_value = [
-        {
-            "ods_code": "",
-            "ccg_name": "",
-            "practice_name": "",
-        }
-    ]
-    engine_mock.return_value = {"ods_code": "", "cutover_duration": 1}
+def test_execute_without_any_occurrences_data(
+        mock_defaults, occurrences_mock, lookup_asids_mock):
 
-    result = test_client.lambda_.invoke(
-        "calculate_dashboard_metrics_from_telemetry")
+    occurrences_mock.return_value = []
 
-    assert result.payload == "ok"
+    result = calculate_dashboard_metrics_from_telemetry()
+
+    assert result == "ok"
 
 
 def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
-        test_client,
+        mock_defaults,
         occurrences_mock,
         lookup_asids_mock,
         engine_mock,
@@ -116,8 +111,7 @@ def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
     }
     occurrences_mock.return_value = [migration_occurrence]
 
-    test_client.lambda_.invoke(
-        "calculate_dashboard_metrics_from_telemetry")
+    calculate_dashboard_metrics_from_telemetry()
 
     upload_migrations_mock.assert_called_with(
         ANY,
@@ -135,7 +129,7 @@ def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
 
 
 def test_ignores_asid_lookup_failures(
-        test_client,
+        mock_defaults,
         occurrences_mock,
         lookup_asids_mock,
         engine_mock,
@@ -160,8 +154,7 @@ def test_ignores_asid_lookup_failures(
         }
     lookup_asids_mock.side_effect = fail_on_first_lookup
 
-    test_client.lambda_.invoke(
-        "calculate_dashboard_metrics_from_telemetry")
+    calculate_dashboard_metrics_from_telemetry()
 
     upload_migrations_mock.assert_called_once_with(
         ANY,
@@ -179,7 +172,7 @@ def test_ignores_asid_lookup_failures(
 
 
 def test_includes_metrics_for_multiple_migrations(
-        test_client,
+        mock_defaults,
         occurrences_mock,
         telemetry_mock,
         lookup_asids_mock,
@@ -201,8 +194,7 @@ def test_includes_metrics_for_multiple_migrations(
         old_telemetry_generator(), new_telemetry_generator(),
         old_telemetry_generator(), new_telemetry_generator()]
 
-    test_client.lambda_.invoke(
-        "calculate_dashboard_metrics_from_telemetry")
+    calculate_dashboard_metrics_from_telemetry()
 
     upload_migrations_mock.assert_called_once_with(
         ANY,
@@ -239,7 +231,7 @@ def test_includes_metrics_for_multiple_migrations(
         ([2, 1, 1, 1, 1, 1, 1], "1.1"),
     ])
 def test_calculates_average_cutover_duration_to_one_decimal_place(
-        test_client,
+        mock_defaults,
         occurrences_mock,
         telemetry_mock,
         lookup_asids_mock,
@@ -256,8 +248,7 @@ def test_calculates_average_cutover_duration_to_one_decimal_place(
     engine_mock.side_effect = map(
         lambda x: {"ods_code": "", "cutover_duration": x}, durations)
 
-    test_client.lambda_.invoke(
-        "calculate_dashboard_metrics_from_telemetry")
+    calculate_dashboard_metrics_from_telemetry()
 
     upload_migrations_mock.assert_called_once_with(
         ANY,
