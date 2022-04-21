@@ -291,7 +291,7 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_average_cutover_d
         })
 
 
-def test_export_splunk_data_runs_without_any_occurrences_data():
+def test_export_splunk_data_runs_without_any_occurrences_data(mock_defaults):
     result = export_splunk_data({}, {})
 
     assert result == "ok"
@@ -306,6 +306,7 @@ def test_export_splunk_data_gets_asids_for_ods_code_in_occurrences_data(
         "ods_code": "A32323",
         "ccg_name": "Test CCG",
         "practice_name": "Test Surgery",
+        "date": date.today()
     }
     occurrences_mock.return_value = [migration_occurrence]
 
