@@ -1,3 +1,4 @@
+from datetime import date
 import os
 from itertools import chain
 import json
@@ -46,6 +47,30 @@ def occurrences_mock(monkeypatch):
 
 
 @pytest.fixture
+def calculate_baseline_date_range_mock(monkeypatch):
+    mock = Mock(
+        return_value={"start_date": date.today(), "end_date": date.today()})
+    monkeypatch.setattr("app.calculate_baseline_date_range", mock)
+    yield mock
+
+
+@pytest.fixture
+def calculate_pre_cutover_date_range_mock(monkeypatch):
+    mock = Mock(
+        return_value={"start_date": date.today(), "end_date": date.today()})
+    monkeypatch.setattr("app.calculate_pre_cutover_date_range", mock)
+    yield mock
+
+
+@pytest.fixture
+def calculate_post_cutover_date_range_mock(monkeypatch):
+    mock = Mock(
+        return_value={"start_date": date.today(), "end_date": date.today()})
+    monkeypatch.setattr("app.calculate_post_cutover_date_range", mock)
+    yield mock
+
+
+@pytest.fixture
 def lookup_asids_mock(monkeypatch):
     mock = Mock()
     mock.return_value = {
@@ -73,7 +98,7 @@ def upload_migrations_mock(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_defaults(
-        s3_resource_mock, lambda_environment_vars, telemetry_mock, occurrences_mock):
+        s3_resource_mock, lambda_environment_vars, telemetry_mock, occurrences_mock, lookup_asids_mock):
     pass
 
 
@@ -261,3 +286,78 @@ def test_export_splunk_data_runs_without_any_occurrences_data():
     result = export_splunk_data({}, {})
 
     assert result == "ok"
+
+
+def test_export_splunk_data_gets_asids_for_ods_code_in_occurrences_data(
+        mock_defaults,
+        occurrences_mock,
+        lookup_asids_mock,
+        lambda_environment_vars):
+    migration_occurrence = {
+        "ods_code": "A32323",
+        "ccg_name": "Test CCG",
+        "practice_name": "Test Surgery",
+    }
+    occurrences_mock.return_value = [migration_occurrence]
+
+    export_splunk_data({}, {})
+
+    lookup_asids_mock.assert_called_once_with(
+        ANY,
+        lambda_environment_vars["ASID_LOOKUP_BUCKET_NAME"],
+        migration_occurrence
+    )
+
+
+def test_export_splunk_data_gets_baseline_date_range(
+        mock_defaults,
+        occurrences_mock,
+        calculate_baseline_date_range_mock):
+    migration_occurrence = {
+        "ods_code": "A32323",
+        "ccg_name": "Test CCG",
+        "practice_name": "Test Surgery",
+        "date": date(2021, 7, 11)
+    }
+    occurrences_mock.return_value = [migration_occurrence]
+
+    export_splunk_data({}, {})
+
+    calculate_baseline_date_range_mock.assert_called_once_with(
+        migration_occurrence["date"])
+
+
+def test_export_splunk_data_gets_pre_cutover_date_range(
+        mock_defaults,
+        occurrences_mock,
+        calculate_pre_cutover_date_range_mock):
+    migration_occurrence = {
+        "ods_code": "A32323",
+        "ccg_name": "Test CCG",
+        "practice_name": "Test Surgery",
+        "date": date(2021, 7, 11)
+    }
+    occurrences_mock.return_value = [migration_occurrence]
+
+    export_splunk_data({}, {})
+
+    calculate_pre_cutover_date_range_mock.assert_called_once_with(
+        migration_occurrence["date"])
+
+
+def test_export_splunk_data_gets_post_cutover_date_range(
+        mock_defaults,
+        occurrences_mock,
+        calculate_post_cutover_date_range_mock):
+    migration_occurrence = {
+        "ods_code": "A32323",
+        "ccg_name": "Test CCG",
+        "practice_name": "Test Surgery",
+        "date": date(2021, 7, 11)
+    }
+    occurrences_mock.return_value = [migration_occurrence]
+
+    export_splunk_data({}, {})
+
+    calculate_post_cutover_date_range_mock.assert_called_once_with(
+        migration_occurrence["date"])

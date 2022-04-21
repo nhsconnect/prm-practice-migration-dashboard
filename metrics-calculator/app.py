@@ -66,6 +66,22 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
 
 @app.lambda_function(name='export-splunk-data')
 def export_splunk_data(event, context):
+    occurrences_bucket_name = os.environ['OCCURRENCES_BUCKET_NAME']
+    asid_lookup_bucket_name = os.environ['ASID_LOOKUP_BUCKET_NAME']
+    s3 = get_s3_resource()
+    known_migrations = get_migration_occurrences(
+        s3, occurrences_bucket_name)
+
+    for migration in known_migrations:
+        asid_lookup = lookup_asids(
+            s3, asid_lookup_bucket_name, migration)
+        baseline_date_range = calculate_baseline_date_range(
+            migration["date"])
+        pre_cutover_date_range = calculate_pre_cutover_date_range(
+            migration["date"])
+        post_cutover_date_range = calculate_post_cutover_date_range(
+            migration["date"])
+
     return "ok"
 
 
@@ -81,3 +97,15 @@ def calculate_mean_cutover(metrics):
     rounded_mean = Decimal(mean).quantize(
         Decimal('.1'), rounding=ROUND_HALF_UP)
     return f"{rounded_mean}"
+
+
+def calculate_baseline_date_range(date):
+    pass
+
+
+def calculate_pre_cutover_date_range(date):
+    pass
+
+
+def calculate_post_cutover_date_range(date):
+    pass
