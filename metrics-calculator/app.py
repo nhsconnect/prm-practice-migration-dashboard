@@ -64,6 +64,11 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
     return "ok"
 
 
+@app.lambda_function(name='export-splunk-data')
+def export_splunk_data(event, context):
+    return "ok"
+
+
 def upload_migrations(s3, migrations):
     metrics_bucket_name = os.environ["METRICS_BUCKET_NAME"]
     write_object_s3(

@@ -5,7 +5,7 @@ import pytest
 
 from unittest.mock import ANY, Mock
 
-from app import calculate_dashboard_metrics_from_telemetry
+from app import calculate_dashboard_metrics_from_telemetry, export_splunk_data
 from chalicelib.lookup_asids import AsidLookupError
 
 
@@ -81,24 +81,23 @@ def mock_defaults(
 def lambda_environment_vars():
     with open(".chalice/config.json") as f:
         config = json.loads(f.read())
-        vars = config["stages"]["dev"]["lambda_functions"]["api_handler"]["environment_variables"]
+        vars = config["stages"]["dev"]["lambda_functions"]["calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
         for key in vars:
             os.environ[key] = vars[key]
-        yield config["stages"]["dev"]["lambda_functions"][
-            "api_handler"]["environment_variables"]
+        yield vars
 
 
-def test_execute_without_any_occurrences_data(
+def test_calculate_dashboard_metrics_from_telemetry_runs_without_any_occurrences_data(
         mock_defaults, occurrences_mock, lookup_asids_mock):
 
     occurrences_mock.return_value = []
 
-    result = calculate_dashboard_metrics_from_telemetry()
+    result = calculate_dashboard_metrics_from_telemetry({}, {})
 
     assert result == "ok"
 
 
-def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
+def test_calculate_dashboard_metrics_from_telemetry_includes_practice_details_from_occurrences_data_in_migration_metrics(
         mock_defaults,
         occurrences_mock,
         lookup_asids_mock,
@@ -111,7 +110,7 @@ def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
     }
     occurrences_mock.return_value = [migration_occurrence]
 
-    calculate_dashboard_metrics_from_telemetry()
+    calculate_dashboard_metrics_from_telemetry({}, {})
 
     upload_migrations_mock.assert_called_with(
         ANY,
@@ -128,7 +127,7 @@ def test_includes_practice_details_from_occurrences_data_in_migration_metrics(
         })
 
 
-def test_ignores_asid_lookup_failures(
+def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures(
         mock_defaults,
         occurrences_mock,
         lookup_asids_mock,
@@ -154,7 +153,7 @@ def test_ignores_asid_lookup_failures(
         }
     lookup_asids_mock.side_effect = fail_on_first_lookup
 
-    calculate_dashboard_metrics_from_telemetry()
+    calculate_dashboard_metrics_from_telemetry({}, {})
 
     upload_migrations_mock.assert_called_once_with(
         ANY,
@@ -171,7 +170,7 @@ def test_ignores_asid_lookup_failures(
         })
 
 
-def test_includes_metrics_for_multiple_migrations(
+def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multiple_migrations(
         mock_defaults,
         occurrences_mock,
         telemetry_mock,
@@ -194,7 +193,7 @@ def test_includes_metrics_for_multiple_migrations(
         old_telemetry_generator(), new_telemetry_generator(),
         old_telemetry_generator(), new_telemetry_generator()]
 
-    calculate_dashboard_metrics_from_telemetry()
+    calculate_dashboard_metrics_from_telemetry({}, {})
 
     upload_migrations_mock.assert_called_once_with(
         ANY,
@@ -230,7 +229,7 @@ def test_includes_metrics_for_multiple_migrations(
         ([2, 1, 1, 1], "1.3"),
         ([2, 1, 1, 1, 1, 1, 1], "1.1"),
     ])
-def test_calculates_average_cutover_duration_to_one_decimal_place(
+def test_calculate_dashboard_metrics_from_telemetry_calculates_average_cutover_duration_to_one_decimal_place(
         mock_defaults,
         occurrences_mock,
         telemetry_mock,
@@ -248,7 +247,7 @@ def test_calculates_average_cutover_duration_to_one_decimal_place(
     engine_mock.side_effect = map(
         lambda x: {"ods_code": "", "cutover_duration": x}, durations)
 
-    calculate_dashboard_metrics_from_telemetry()
+    calculate_dashboard_metrics_from_telemetry({}, {})
 
     upload_migrations_mock.assert_called_once_with(
         ANY,
@@ -256,3 +255,9 @@ def test_calculates_average_cutover_duration_to_one_decimal_place(
             "mean_cutover_duration": expected_average,
             "migrations": ANY
         })
+
+
+def test_export_splunk_data_runs_without_any_occurrences_data():
+    result = export_splunk_data({}, {})
+
+    assert result == "ok"
