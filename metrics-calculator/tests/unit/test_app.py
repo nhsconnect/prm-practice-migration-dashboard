@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 import os
 from itertools import chain
 import json
@@ -57,7 +57,7 @@ def calculate_baseline_date_range_mock(monkeypatch):
 @pytest.fixture
 def calculate_pre_cutover_date_range_mock(monkeypatch):
     mock = Mock(
-        return_value={"start_date": date.today(), "end_date": date.today()})
+        return_value={"start_date": date.today() - timedelta(2), "end_date": date.today() - timedelta(1)})
     monkeypatch.setattr("app.calculate_pre_cutover_date_range", mock)
     yield mock
 
@@ -65,7 +65,7 @@ def calculate_pre_cutover_date_range_mock(monkeypatch):
 @pytest.fixture
 def calculate_post_cutover_date_range_mock(monkeypatch):
     mock = Mock(
-        return_value={"start_date": date.today(), "end_date": date.today()})
+        return_value={"start_date": date.today() + timedelta(1), "end_date": date.today() + timedelta(2)})
     monkeypatch.setattr("app.calculate_post_cutover_date_range", mock)
     yield mock
 
@@ -76,6 +76,15 @@ def get_baseline_threshold_from_splunk_data_mock(monkeypatch):
         return_value="101")
     monkeypatch.setattr(
         "app.get_baseline_threshold_from_splunk_data", mock)
+    yield mock
+
+
+@pytest.fixture
+def get_telemetry_from_splunk_mock(monkeypatch):
+    mock = Mock(
+        return_value="""_time",count,avgmin2std
+"2021-09-06T00:00:00.000+0000",2,"4537.33933970307""")
+    monkeypatch.setattr("app.get_telemetry_from_splunk", mock)
     yield mock
 
 
@@ -386,13 +395,50 @@ def test_export_splunk_data_queries_splunk_for_baseline_threshold(
         "date": date(2021, 7, 11)
     }
     occurrences_mock.return_value = [migration_occurrence]
+    old_asid = "12345"
     lookup_asids_mock.return_value = {
-        "old": {"asid": "12345", "name": ""},
+        "old": {"asid": old_asid, "name": ""},
         "new": {"asid": "", "name": ""}
     }
 
     export_splunk_data({}, {})
 
     get_baseline_threshold_from_splunk_data_mock.assert_called_once_with(
-        lookup_asids_mock.return_value["old"]["asid"],
+        old_asid,
         calculate_baseline_date_range_mock.return_value)
+
+
+def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
+        mock_defaults,
+        occurrences_mock,
+        calculate_pre_cutover_date_range_mock,
+        calculate_post_cutover_date_range_mock,
+        lookup_asids_mock,
+        get_baseline_threshold_from_splunk_data_mock,
+        get_telemetry_from_splunk_mock):
+    migration_occurrence = {
+        "ods_code": "A32323",
+        "ccg_name": "Test CCG",
+        "practice_name": "Test Surgery",
+        "date": date(2021, 7, 11)
+    }
+    old_asid = "12345"
+    new_asid = "09876"
+    occurrences_mock.return_value = [migration_occurrence]
+    lookup_asids_mock.return_value = {
+        "old": {"asid": old_asid, "name": ""},
+        "new": {"asid": new_asid, "name": ""}
+    }
+    baseline_threshold = "10"
+    get_baseline_threshold_from_splunk_data_mock.return_value = baseline_threshold
+
+    export_splunk_data({}, {})
+
+    get_telemetry_from_splunk_mock.assert_any_call(
+        old_asid,
+        baseline_threshold,
+        calculate_pre_cutover_date_range_mock.return_value)
+    get_telemetry_from_splunk_mock.assert_any_call(
+        new_asid,
+        baseline_threshold,
+        calculate_post_cutover_date_range_mock.return_value)

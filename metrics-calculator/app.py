@@ -84,6 +84,17 @@ def export_splunk_data(event, context):
         baseline_threshold = get_baseline_threshold_from_splunk_data(
             asid_lookup["old"]["asid"], baseline_date_range)
 
+        get_telemetry_from_splunk(
+            asid_lookup["old"]["asid"],
+            baseline_threshold,
+            pre_cutover_date_range
+        )
+        get_telemetry_from_splunk(
+            asid_lookup["new"]["asid"],
+            baseline_threshold,
+            post_cutover_date_range
+        )
+
     return "ok"
 
 
@@ -114,4 +125,8 @@ def calculate_post_cutover_date_range(date):
 
 
 def get_baseline_threshold_from_splunk_data(asid, baseline_date_range):
+    pass
+
+
+def get_telemetry_from_splunk(asid, baseline_threshold, date_range):
     pass
