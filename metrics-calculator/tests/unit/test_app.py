@@ -429,9 +429,9 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         "practice_name": "Test Surgery",
         "date": date(2021, 7, 11)
     }
+    occurrences_mock.return_value = [migration_occurrence]
     old_asid = "12345"
     new_asid = "09876"
-    occurrences_mock.return_value = [migration_occurrence]
     lookup_asids_mock.return_value = {
         "old": {"asid": old_asid, "name": ""},
         "new": {"asid": new_asid, "name": ""}
@@ -450,15 +450,12 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         baseline_threshold,
         calculate_post_cutover_date_range_mock.return_value)
 
+
 def test_export_splunk_data_uploads_telemetry_to_s3(
-        mock_defaults,
         occurrences_mock,
         upload_telemetry_mock,
-        calculate_pre_cutover_date_range_mock,
-        calculate_post_cutover_date_range_mock,
         lookup_asids_mock,
         lambda_environment_vars,
-        get_baseline_threshold_from_splunk_data_mock,
         get_telemetry_from_splunk_mock):
     migration_occurrence = {
         "ods_code": "A32323",
@@ -475,7 +472,8 @@ def test_export_splunk_data_uploads_telemetry_to_s3(
     }
     old_telemetry_data = "old"
     new_telemetry_data = "new"
-    get_telemetry_from_splunk_mock.side_effect = [old_telemetry_data, new_telemetry_data]
+    get_telemetry_from_splunk_mock.side_effect = [
+        old_telemetry_data, new_telemetry_data]
 
     export_splunk_data({}, {})
 
