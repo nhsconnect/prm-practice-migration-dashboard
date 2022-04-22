@@ -1,13 +1,22 @@
-import sys
 import boto3
 import json
-from moto import mock_s3
 import pytest
 import os
+
+from moto import mock_s3
+from unittest.mock import MagicMock, Mock
 
 from chalice.test import Client
 from chalicelib.lookup_asids import ASID_LOOKUP_HEADERS
 from tests.builders.file import build_gzip_csv
+
+
+SPINE_BASELINE_DATA = b"""_time,avgmin2std
+    2021-12-08T00:00:00.000+0000,200.0"""
+SPINE_PRE_CUTOVER_DATA = b"""_time,count,avgmin2std
+    2021-12-08T00:00:00.000+0000,20,200.0"""
+SPINE_POST_CUTOVER_DATA = b"""_time,count,avgmin2std
+    2021-12-08T00:00:00.000+0000,20,200.0"""
 
 
 @pytest.fixture(scope='function')
@@ -31,6 +40,14 @@ def test_client():
     from app import app
     with Client(app) as client:
         yield client
+
+
+@pytest.fixture(scope="function")
+def splunk(monkeypatch):
+    request_mock = Mock()
+    splunk_call_mock = Mock(return_value=MagicMock(getresponse=request_mock))
+    monkeypatch.setattr("app.HTTPSConnection", splunk_call_mock)
+    yield request_mock
 
 
 @pytest.fixture(scope="function")
@@ -77,6 +94,39 @@ def test_calculate_dashboard_metrics_from_telemetry(
             "target_system": "EMIS Web",
             "ods_code": ods_code
         }]}
+
+
+@pytest.mark.skip(reason="Won't pass until all functionality implemented")
+def test_export_splunk_data(
+        test_client, lambda_environment_vars, s3, splunk):
+    ods_code = "A12345"
+    old_asid = "1234"
+    new_asid = "5678"
+    occurrences_bucket_name = lambda_environment_vars["OCCURRENCES_BUCKET_NAME"]
+    asid_lookup_bucket_name = lambda_environment_vars["ASID_LOOKUP_BUCKET_NAME"]
+    telemetry_bucket_name = lambda_environment_vars["TELEMETRY_BUCKET_NAME"]
+    ccg = "My CCG"
+    practice = "My First Surgery"
+    create_occurrences_data(
+        occurrences_bucket_name, s3, ods_code, ccg, practice)
+    create_asid_lookup_data(
+        asid_lookup_bucket_name, s3, ods_code, old_asid, new_asid)
+    create_mock_splunk_data(splunk, old_asid)
+
+    response = test_client.lambda_.invoke('export-splunk-data')
+    assert response.payload == "ok"
+
+    pre_cutover_telemetry_obj = telemetry_bucket_name.Object(
+        f"{old_asid}-telemetry.csv.gz").get()
+    pre_cutover_telemetry = pre_cutover_telemetry_obj['Body'].read().decode(
+        'utf-8')
+    assert json.loads(pre_cutover_telemetry) == SPINE_PRE_CUTOVER_DATA
+
+    post_cutover_telemetry_obj = telemetry_bucket_name.Object(
+        f"{new_asid}-telemetry.csv.gz").get()
+    post_cutover_telemetry = post_cutover_telemetry_obj['Body'].read().decode(
+        'utf-8')
+    assert json.loads(post_cutover_telemetry) == SPINE_POST_CUTOVER_DATA
 
 
 def create_occurrences_data(occurrences_bucket_name, s3, ods_code, ccg, practice):
@@ -136,3 +186,12 @@ def create_telemetry_data(bucket_name, s3, old_asid, new_asid):
 def create_metrics_bucket(metrics_bucket_name, s3):
     metrics_bucket = s3.create_bucket(Bucket=metrics_bucket_name)
     return metrics_bucket
+
+
+def create_mock_splunk_data(splunk):
+
+    splunk.return_value = [
+        lambda: Mock(status=200, read=lambda: SPINE_BASELINE_DATA),
+        lambda: Mock(status=200, read=lambda: SPINE_PRE_CUTOVER_DATA),
+        lambda: Mock(status=200, read=lambda: SPINE_POST_CUTOVER_DATA),
+    ]
