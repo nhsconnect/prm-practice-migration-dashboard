@@ -10,6 +10,7 @@ from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
 from chalicelib.migration_occurrences import get_migration_occurrences
 from chalicelib.s3 import get_s3_resource, write_object_s3
 from chalicelib.telemetry import get_telemetry
+from chalicelib.calculate_date_range import calculate_baseline_date_range, calculate_pre_cutover_date_range, calculate_post_cutover_date_range
 
 app = Chalice(app_name='metrics-calculator')
 
@@ -122,17 +123,6 @@ def calculate_mean_cutover(metrics):
         Decimal('.1'), rounding=ROUND_HALF_UP)
     return f"{rounded_mean}"
 
-
-def calculate_baseline_date_range(date):
-    pass
-
-
-def calculate_pre_cutover_date_range(date):
-    pass
-
-
-def calculate_post_cutover_date_range(date):
-    pass
 
 
 def get_baseline_threshold_from_splunk_data(asid, baseline_date_range):

@@ -6,7 +6,7 @@ import pytest
 
 from unittest.mock import ANY, Mock
 
-from app import calculate_baseline_date_range, calculate_dashboard_metrics_from_telemetry, export_splunk_data
+from app import calculate_dashboard_metrics_from_telemetry, export_splunk_data
 from chalicelib.lookup_asids import AsidLookupError
 
 
