@@ -40,6 +40,13 @@ def telemetry_mock(monkeypatch):
 
 
 @pytest.fixture
+def upload_telemetry_mock(monkeypatch):
+    mock = Mock()
+    monkeypatch.setattr("app.upload_telemetry", mock)
+    yield mock
+
+
+@pytest.fixture
 def occurrences_mock(monkeypatch):
     mock = Mock(return_value=[])
     monkeypatch.setattr("app.get_migration_occurrences", mock)
@@ -442,3 +449,45 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         new_asid,
         baseline_threshold,
         calculate_post_cutover_date_range_mock.return_value)
+
+def test_export_splunk_data_uploads_telemetry_to_s3(
+        mock_defaults,
+        occurrences_mock,
+        upload_telemetry_mock,
+        calculate_pre_cutover_date_range_mock,
+        calculate_post_cutover_date_range_mock,
+        lookup_asids_mock,
+        lambda_environment_vars,
+        get_baseline_threshold_from_splunk_data_mock,
+        get_telemetry_from_splunk_mock):
+    migration_occurrence = {
+        "ods_code": "A32323",
+        "ccg_name": "Test CCG",
+        "practice_name": "Test Surgery",
+        "date": date(2021, 7, 11)
+    }
+    occurrences_mock.return_value = [migration_occurrence]
+    old_asid = "12345"
+    new_asid = "09876"
+    lookup_asids_mock.return_value = {
+        "old": {"asid": old_asid, "name": ""},
+        "new": {"asid": new_asid, "name": ""}
+    }
+    old_telemetry_data = "old"
+    new_telemetry_data = "new"
+    get_telemetry_from_splunk_mock.side_effect = [old_telemetry_data, new_telemetry_data]
+
+    export_splunk_data({}, {})
+
+    upload_telemetry_mock.assert_any_call(
+        ANY,
+        lambda_environment_vars["TELEMETRY_BUCKET_NAME"],
+        old_telemetry_data,
+        f"{old_asid}-telemetry.csv.gz"
+    )
+    upload_telemetry_mock.assert_any_call(
+        ANY,
+        lambda_environment_vars["TELEMETRY_BUCKET_NAME"],
+        new_telemetry_data,
+        f"{new_asid}-telemetry.csv.gz"
+    )

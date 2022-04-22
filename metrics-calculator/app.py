@@ -68,6 +68,8 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
 def export_splunk_data(event, context):
     occurrences_bucket_name = os.environ['OCCURRENCES_BUCKET_NAME']
     asid_lookup_bucket_name = os.environ['ASID_LOOKUP_BUCKET_NAME']
+    telemetry_bucket_name = os.environ['TELEMETRY_BUCKET_NAME']
+
     s3 = get_s3_resource()
     known_migrations = get_migration_occurrences(
         s3, occurrences_bucket_name)
@@ -75,25 +77,34 @@ def export_splunk_data(event, context):
     for migration in known_migrations:
         asid_lookup = lookup_asids(
             s3, asid_lookup_bucket_name, migration)
+        old_asid = asid_lookup["old"]["asid"]
+        new_asid = asid_lookup["new"]["asid"]
+
         baseline_date_range = calculate_baseline_date_range(
             migration["date"])
         pre_cutover_date_range = calculate_pre_cutover_date_range(
             migration["date"])
         post_cutover_date_range = calculate_post_cutover_date_range(
             migration["date"])
-        baseline_threshold = get_baseline_threshold_from_splunk_data(
-            asid_lookup["old"]["asid"], baseline_date_range)
 
-        get_telemetry_from_splunk(
-            asid_lookup["old"]["asid"],
+        baseline_threshold = get_baseline_threshold_from_splunk_data(
+            old_asid, baseline_date_range)
+
+        pre_cutover_telemetry = get_telemetry_from_splunk(
+            old_asid,
             baseline_threshold,
             pre_cutover_date_range
         )
-        get_telemetry_from_splunk(
-            asid_lookup["new"]["asid"],
+        post_cutover_telemetry = get_telemetry_from_splunk(
+            new_asid,
             baseline_threshold,
             post_cutover_date_range
         )
+
+        pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
+        post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
+        upload_telemetry(s3, telemetry_bucket_name, pre_cutover_telemetry, pre_cutover_telemetry_filename)
+        upload_telemetry(s3, telemetry_bucket_name, post_cutover_telemetry, post_cutover_telemetry_filename)
 
     return "ok"
 
@@ -129,4 +140,8 @@ def get_baseline_threshold_from_splunk_data(asid, baseline_date_range):
 
 
 def get_telemetry_from_splunk(asid, baseline_threshold, date_range):
+    pass
+
+
+def upload_telemetry(s3, bucket_name, telemetry_data, filename):
     pass
