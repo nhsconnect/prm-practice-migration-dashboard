@@ -124,11 +124,6 @@ def calculate_mean_cutover(metrics):
     return f"{rounded_mean}"
 
 
-
-def get_baseline_threshold_from_splunk_data(asid, baseline_date_range):
-    pass
-
-
 def get_telemetry_from_splunk(asid, baseline_threshold, date_range):
     pass
 
