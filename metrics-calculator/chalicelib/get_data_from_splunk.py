@@ -25,3 +25,10 @@ def get_baseline_threshold_from_splunk_data(asid, baseline_date_range):
         raise ValueError("Threshold is not a positive value")
     return threshold
 
+def get_telemetry_from_splunk(asid, baseline_threshold, date_range):
+    connection = HTTPSConnection("splunk-url")
+    connection.request('GET', "/?activationRegion=eu-west-2")
+    response = connection.getresponse()
+    if response.status != 200:
+        raise SplunkQueryError(f"Splunk request returned a {response.status} code")
+    return response

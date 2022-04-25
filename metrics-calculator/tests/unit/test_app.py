@@ -123,7 +123,8 @@ def upload_migrations_mock(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_defaults(
-        s3_resource_mock, lambda_environment_vars, telemetry_mock, occurrences_mock, lookup_asids_mock, get_baseline_threshold_from_splunk_data_mock):
+        s3_resource_mock, lambda_environment_vars, telemetry_mock, occurrences_mock, lookup_asids_mock,
+        get_baseline_threshold_from_splunk_data_mock, get_telemetry_from_splunk_mock):
     pass
 
 

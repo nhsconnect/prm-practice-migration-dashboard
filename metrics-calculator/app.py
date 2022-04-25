@@ -5,7 +5,7 @@ import os
 from statistics import fmean
 from chalice import Chalice
 
-from chalicelib.get_data_from_splunk import get_baseline_threshold_from_splunk_data
+from chalicelib.get_data_from_splunk import get_baseline_threshold_from_splunk_data, get_telemetry_from_splunk
 from chalicelib.lookup_asids import AsidLookupError, lookup_asids
 from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
 from chalicelib.migration_occurrences import get_migration_occurrences
@@ -123,10 +123,6 @@ def calculate_mean_cutover(metrics):
     rounded_mean = Decimal(mean).quantize(
         Decimal('.1'), rounding=ROUND_HALF_UP)
     return f"{rounded_mean}"
-
-
-def get_telemetry_from_splunk(asid, baseline_threshold, date_range):
-    pass
 
 
 def upload_telemetry(s3, bucket_name, telemetry_data, filename):
