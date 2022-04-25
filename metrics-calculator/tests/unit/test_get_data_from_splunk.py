@@ -3,7 +3,7 @@ from unittest.mock import Mock, MagicMock
 
 import pytest as pytest
 
-from chalicelib.get_data_from_splunk import get_baseline_threshold_from_splunk_data, SplunkQueryError
+from chalicelib.get_data_from_splunk import get_baseline_threshold_from_splunk_data, SplunkQueryError, SplunkParseError
 
 
 @pytest.fixture(scope="function")
@@ -19,7 +19,7 @@ def test_get_baseline_threshold_from_splunk_data_extracts_threshold_from_splunk_
     baseline_date_range = {"start_date": date(2021, 4, 6), "end_date": date(2021, 6, 28)}
 
     splunk.return_value = Mock(read=lambda:b"""_time",count,avgmin2std
-"2021-09-06T00:00:00.000+0000",2,"4537.33933970307""")
+"2021-09-06T00:00:00.000+0000",2,"4537.33933970307""", status=200)
 
     baseline_threshold = get_baseline_threshold_from_splunk_data(
         asid, baseline_date_range)
@@ -32,7 +32,7 @@ def test_get_baseline_threshold_from_splunk_data_handles_no_results(splunk):
     baseline_date_range = {"start_date": date(2021, 4, 6), "end_date": date(2021, 6, 28)}
 
     splunk.return_value = Mock(read=lambda:b"""_time",count,avgmin2std
-"2021-09-06T00:00:00.000+0000",0,""0""")
+"2021-09-06T00:00:00.000+0000",0,""0""", status=200)
 
     with pytest.raises(ValueError, match="Threshold is not a positive value"):
         get_baseline_threshold_from_splunk_data(
@@ -48,3 +48,15 @@ def test_get_baseline_threshold_from_splunk_data_handles_HTTP_response_failure(s
     with pytest.raises(SplunkQueryError, match="Splunk request returned a 404 code"):
         get_baseline_threshold_from_splunk_data(
             asid, baseline_date_range)
+
+
+def test_get_baseline_threshold_from_splunk_data_handles_parse_failure(splunk):
+    asid = "12345"
+    baseline_date_range = {"start_date": date(2021, 4, 6), "end_date": date(2021, 6, 28)}
+
+    splunk.return_value = Mock(read=lambda:"this-is-not-a-byte-string", status=200)
+
+    with pytest.raises(SplunkParseError):
+        get_baseline_threshold_from_splunk_data(
+            asid, baseline_date_range)
+
