@@ -16,13 +16,20 @@ def get_baseline_threshold_from_splunk_data(asid, baseline_date_range):
     return threshold
 
 
+def get_telemetry_from_splunk(asid, date_range, baseline_threshold):
+    search_text = f"""index="spine2vfmmonitor" messageSender={asid}
+| timechart span=1d count
+| fillnull
+| eval day_of_week = strftime(_time,"%A")
+| where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
+| eval avgmin2std={baseline_threshold}
+| fields - day_of_week"""
+    response = make_splunk_request(date_range, search_text)
+    return response
+
+
 def make_request_for_baseline_telemetry(asid, baseline_date_range):
-    connection = HTTPSConnection("splunk-url")
-    request_body = {
-        "output_mode": "csv",
-        "earliest_time": baseline_date_range["start_date"],
-        "latest_time": baseline_date_range["end_date"],
-        "search": f"""index="spine2vfmmonitor" messageSender={asid}
+    search_text = f"""index="spine2vfmmonitor" messageSender={asid}
 | bucket span=1d _time
 | eval day_of_week = strftime(_time,"%A")
 | where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
@@ -31,6 +38,17 @@ def make_request_for_baseline_telemetry(asid, baseline_date_range):
 | eventstats avg(count) as average stdev(count) as stdd
 | eval avgmin2std=average-(stdd*2)
 | fields - stdd"""
+    response = make_splunk_request(baseline_date_range, search_text)
+    return response
+
+
+def make_splunk_request(date_range, search_text):
+    connection = HTTPSConnection("splunk-url")
+    request_body = {
+        "output_mode": "csv",
+        "earliest_time": date_range["start_date"],
+        "latest_time": date_range["end_date"],
+        "search": search_text
     }
     connection.request('POST', "/?activationRegion=eu-west-2", request_body)
     response = connection.getresponse()
@@ -50,26 +68,3 @@ def parse_threshold_from_splunk_response(response):
     if float(threshold) <= 0:
         raise ValueError("Threshold is not a positive value")
     return threshold
-
-
-def get_telemetry_from_splunk(asid, date_range, baseline_threshold):
-    connection = HTTPSConnection("splunk-url")
-    request_body = {
-        "output_mode": "csv",
-        "earliest_time": date_range["start_date"],
-        "latest_time": date_range["end_date"],
-        "search": f"""index="spine2vfmmonitor" messageSender={asid}
-| timechart span=1d count
-| fillnull
-| eval day_of_week = strftime(_time,"%A")
-| where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
-| eval avgmin2std={baseline_threshold}
-| fields - day_of_week"""
-    }
-    connection.request('POST', "/?activationRegion=eu-west-2", request_body)
-    response = connection.getresponse()
-    if response.status != 200:
-        raise SplunkQueryError(f"Splunk request returned a {response.status} code")
-    return response
-
-
