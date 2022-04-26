@@ -11,6 +11,12 @@ class SplunkParseError(Exception):
 
 
 def get_baseline_threshold_from_splunk_data(asid, baseline_date_range):
+    response = make_request_for_baseline_telemetry(asid, baseline_date_range)
+    threshold = parse_threshold_from_splunk_response(response)
+    return threshold
+
+
+def make_request_for_baseline_telemetry(asid, baseline_date_range):
     connection = HTTPSConnection("splunk-url")
     request_body = {
         "output_mode": "csv",
@@ -30,6 +36,10 @@ def get_baseline_threshold_from_splunk_data(asid, baseline_date_range):
     response = connection.getresponse()
     if response.status != 200:
         raise SplunkQueryError(f"Splunk request returned a {response.status} code")
+    return response
+
+
+def parse_threshold_from_splunk_response(response):
     try:
         response_lines = response.read().decode().splitlines()
         csv_reader = csv.DictReader(response_lines)
