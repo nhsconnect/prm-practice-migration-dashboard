@@ -109,7 +109,7 @@ def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_re
 | fields - stdd"""
     }
     splunk_request.assert_called_once_with(
-        "POST", splunk_base_url, expected_request_body)
+        "POST", f"{splunk_base_url}/search/jobs/export", expected_request_body)
 
 
 def test_get_telemetry_from_splunk_get_cutover_telemetry(splunk_response):
