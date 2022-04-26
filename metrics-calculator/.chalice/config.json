@@ -11,6 +11,14 @@
             "TELEMETRY_BUCKET_NAME": "prm-pracmig-telemetry-dev",
             "METRICS_BUCKET_NAME": "prm-pracmig-metrics-dev"
           }
+        },
+        "export_splunk_data": {
+          "environment_variables": {
+            "OCCURRENCES_BUCKET_NAME": "prm-pracmig-migration-occurrences-dev",
+            "ASID_LOOKUP_BUCKET_NAME": "prm-pracmig-asid-lookup-dev",
+            "TELEMETRY_BUCKET_NAME": "prm-pracmig-telemetry-dev",
+            "SPLUNK_BASE_URL": "https://dev.splunk.url"
+          }
         }
       }
     }

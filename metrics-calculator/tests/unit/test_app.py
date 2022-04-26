@@ -123,13 +123,19 @@ def upload_migrations_mock(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_defaults(
-        s3_resource_mock, lambda_environment_vars, telemetry_mock, occurrences_mock, lookup_asids_mock,
-        get_baseline_threshold_from_splunk_data_mock, get_telemetry_from_splunk_mock):
+        s3_resource_mock,
+        calculator_lambda_env_vars,
+        exporter_lambda_env_vars,
+        telemetry_mock,
+        occurrences_mock,
+        lookup_asids_mock,
+        get_baseline_threshold_from_splunk_data_mock,
+        get_telemetry_from_splunk_mock):
     pass
 
 
 @pytest.fixture(scope="function")
-def lambda_environment_vars():
+def calculator_lambda_env_vars():
     with open(".chalice/config.json") as f:
         config = json.loads(f.read())
         vars = config["stages"]["dev"]["lambda_functions"]["calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
@@ -137,6 +143,15 @@ def lambda_environment_vars():
             os.environ[key] = vars[key]
         yield vars
 
+
+@pytest.fixture(scope="function")
+def exporter_lambda_env_vars():
+    with open(".chalice/config.json") as f:
+        config = json.loads(f.read())
+        vars = config["stages"]["dev"]["lambda_functions"]["export_splunk_data"]["environment_variables"]
+        for key in vars:
+            os.environ[key] = vars[key]
+        yield vars
 
 
 def test_calculate_dashboard_metrics_from_telemetry_runs_without_any_occurrences_data(
@@ -319,7 +334,7 @@ def test_export_splunk_data_gets_asids_for_ods_code_in_occurrences_data(
         mock_defaults,
         occurrences_mock,
         lookup_asids_mock,
-        lambda_environment_vars):
+        exporter_lambda_env_vars):
     migration_occurrence = {
         "ods_code": "A32323",
         "ccg_name": "Test CCG",
@@ -332,7 +347,7 @@ def test_export_splunk_data_gets_asids_for_ods_code_in_occurrences_data(
 
     lookup_asids_mock.assert_called_once_with(
         ANY,
-        lambda_environment_vars["ASID_LOOKUP_BUCKET_NAME"],
+        exporter_lambda_env_vars["ASID_LOOKUP_BUCKET_NAME"],
         migration_occurrence
     )
 
@@ -396,6 +411,7 @@ def test_export_splunk_data_queries_splunk_for_baseline_threshold(
         occurrences_mock,
         calculate_baseline_date_range_mock,
         lookup_asids_mock,
+        exporter_lambda_env_vars,
         get_baseline_threshold_from_splunk_data_mock):
     migration_occurrence = {
         "ods_code": "A32323",
@@ -413,6 +429,7 @@ def test_export_splunk_data_queries_splunk_for_baseline_threshold(
     export_splunk_data({}, {})
 
     get_baseline_threshold_from_splunk_data_mock.assert_called_once_with(
+        exporter_lambda_env_vars["SPLUNK_BASE_URL"],
         old_asid,
         calculate_baseline_date_range_mock.return_value)
 
@@ -453,11 +470,12 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         calculate_post_cutover_date_range_mock.return_value)
 
 
-def test_export_splunk_data_uploads_telemetry_to_s3(mock_defaults,
+def test_export_splunk_data_uploads_telemetry_to_s3(
+        mock_defaults,
         occurrences_mock,
         upload_telemetry_mock,
         lookup_asids_mock,
-        lambda_environment_vars,
+        exporter_lambda_env_vars,
         get_telemetry_from_splunk_mock):
     migration_occurrence = {
         "ods_code": "A32323",
@@ -481,13 +499,13 @@ def test_export_splunk_data_uploads_telemetry_to_s3(mock_defaults,
 
     upload_telemetry_mock.assert_any_call(
         ANY,
-        lambda_environment_vars["TELEMETRY_BUCKET_NAME"],
+        exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"],
         old_telemetry_data,
         f"{old_asid}-telemetry.csv.gz"
     )
     upload_telemetry_mock.assert_any_call(
         ANY,
-        lambda_environment_vars["TELEMETRY_BUCKET_NAME"],
+        exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"],
         new_telemetry_data,
         f"{new_asid}-telemetry.csv.gz"
     )
