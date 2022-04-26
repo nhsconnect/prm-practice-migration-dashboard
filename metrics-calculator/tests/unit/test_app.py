@@ -123,8 +123,13 @@ def upload_migrations_mock(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_defaults(
-        s3_resource_mock, lambda_environment_vars, telemetry_mock, occurrences_mock, lookup_asids_mock,
-        get_baseline_threshold_from_splunk_data_mock, get_telemetry_from_splunk_mock):
+        s3_resource_mock,
+        lambda_environment_vars,
+        telemetry_mock,
+        occurrences_mock,
+        lookup_asids_mock,
+        get_baseline_threshold_from_splunk_data_mock,
+        get_telemetry_from_splunk_mock):
     pass
 
 
@@ -136,7 +141,6 @@ def lambda_environment_vars():
         for key in vars:
             os.environ[key] = vars[key]
         yield vars
-
 
 
 def test_calculate_dashboard_metrics_from_telemetry_runs_without_any_occurrences_data(
@@ -396,6 +400,7 @@ def test_export_splunk_data_queries_splunk_for_baseline_threshold(
         occurrences_mock,
         calculate_baseline_date_range_mock,
         lookup_asids_mock,
+        lambda_environment_vars,
         get_baseline_threshold_from_splunk_data_mock):
     migration_occurrence = {
         "ods_code": "A32323",
@@ -413,6 +418,7 @@ def test_export_splunk_data_queries_splunk_for_baseline_threshold(
     export_splunk_data({}, {})
 
     get_baseline_threshold_from_splunk_data_mock.assert_called_once_with(
+        lambda_environment_vars["SPLUNK_BASE_URL"],
         old_asid,
         calculate_baseline_date_range_mock.return_value)
 
@@ -453,7 +459,8 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         calculate_post_cutover_date_range_mock.return_value)
 
 
-def test_export_splunk_data_uploads_telemetry_to_s3(mock_defaults,
+def test_export_splunk_data_uploads_telemetry_to_s3(
+        mock_defaults,
         occurrences_mock,
         upload_telemetry_mock,
         lookup_asids_mock,
