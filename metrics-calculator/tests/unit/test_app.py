@@ -440,6 +440,7 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         calculate_pre_cutover_date_range_mock,
         calculate_post_cutover_date_range_mock,
         lookup_asids_mock,
+        exporter_lambda_env_vars,
         get_baseline_threshold_from_splunk_data_mock,
         get_telemetry_from_splunk_mock):
     migration_occurrence = {
@@ -461,10 +462,12 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
     export_splunk_data({}, {})
 
     get_telemetry_from_splunk_mock.assert_any_call(
+        exporter_lambda_env_vars["SPLUNK_BASE_URL"],
         old_asid,
         baseline_threshold,
         calculate_pre_cutover_date_range_mock.return_value)
     get_telemetry_from_splunk_mock.assert_any_call(
+        exporter_lambda_env_vars["SPLUNK_BASE_URL"],
         new_asid,
         baseline_threshold,
         calculate_post_cutover_date_range_mock.return_value)
