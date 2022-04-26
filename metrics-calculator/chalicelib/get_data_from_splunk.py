@@ -53,7 +53,8 @@ def make_splunk_request(date_range, search_text):
     connection.request('POST', "/?activationRegion=eu-west-2", request_body)
     response = connection.getresponse()
     if response.status != 200:
-        raise SplunkQueryError(f"Splunk request returned a {response.status} code")
+        raise SplunkQueryError(
+            f"Splunk request returned a {response.status} code")
     return response
 
 
