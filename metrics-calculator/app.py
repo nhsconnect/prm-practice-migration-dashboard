@@ -94,11 +94,13 @@ def export_splunk_data(event, context):
             splunk_base_url, old_asid, baseline_date_range)
 
         pre_cutover_telemetry = get_telemetry_from_splunk(
+            splunk_base_url,
             old_asid,
             baseline_threshold,
             pre_cutover_date_range
         )
         post_cutover_telemetry = get_telemetry_from_splunk(
+            splunk_base_url,
             new_asid,
             baseline_threshold,
             post_cutover_date_range

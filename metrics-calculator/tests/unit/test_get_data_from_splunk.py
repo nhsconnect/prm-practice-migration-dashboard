@@ -122,7 +122,7 @@ def test_get_telemetry_from_splunk_get_cutover_telemetry(splunk_response):
     splunk_response.return_value = Mock(read=lambda: b"""_time",count,avgmin2std
 "2021-09-06T00:00:00.000+0000",2,"4537.33933970307""", status=200)
 
-    telemetry = get_telemetry_from_splunk(asid, date_range, threshold)
+    telemetry = get_telemetry_from_splunk("", asid, date_range, threshold)
 
     assert telemetry == splunk_response.return_value
 
@@ -138,7 +138,7 @@ def test_get_telemetry_from_splunk_handles_http_response_failure(splunk_response
     splunk_response.return_value = Mock(status=404)
 
     with pytest.raises(SplunkQueryError, match="Splunk request returned a 404 code"):
-        get_telemetry_from_splunk(asid, date_range, threshold)
+        get_telemetry_from_splunk("", asid, date_range, threshold)
 
 
 def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
@@ -148,8 +148,9 @@ def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
         "end_date": date(2021, 7, 19)
     }
     threshold = "4537.33933970307"
+    splunk_base_url = "https://test-splunk"
 
-    get_telemetry_from_splunk(asid, date_range, threshold)
+    get_telemetry_from_splunk(splunk_base_url, asid, date_range, threshold)
 
     expected_request_body = {
         "output_mode": "csv",
@@ -163,4 +164,5 @@ def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
 | eval avgmin2std={threshold}
 | fields - day_of_week"""
     }
-    splunk_request.assert_called_once_with("POST", ANY, expected_request_body)
+    splunk_request.assert_called_once_with(
+        "POST", f"{splunk_base_url}/search/jobs/export", expected_request_body)

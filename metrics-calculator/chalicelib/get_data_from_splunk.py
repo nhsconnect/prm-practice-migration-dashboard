@@ -18,7 +18,7 @@ def get_baseline_threshold_from_splunk_data(
     return threshold
 
 
-def get_telemetry_from_splunk(asid, date_range, baseline_threshold):
+def get_telemetry_from_splunk(splunk_base_url, asid, date_range, baseline_threshold):
     search_text = f"""index="spine2vfmmonitor" messageSender={asid}
 | timechart span=1d count
 | fillnull
@@ -27,7 +27,7 @@ def get_telemetry_from_splunk(asid, date_range, baseline_threshold):
 | eval avgmin2std={baseline_threshold}
 | fields - day_of_week"""
     response = make_splunk_request(
-        "/?activationRegion=eu-west-2", date_range, search_text)
+        f"{splunk_base_url}/search/jobs/export", date_range, search_text)
     return response
 
 
