@@ -11,9 +11,9 @@ class SplunkParseError(Exception):
 
 
 def get_baseline_threshold_from_splunk_data(
-        splunk_url, asid, baseline_date_range):
+        splunk_base_url, asid, baseline_date_range):
     response = make_request_for_baseline_telemetry(
-        splunk_url, asid, baseline_date_range)
+        splunk_base_url, asid, baseline_date_range)
     threshold = parse_threshold_from_splunk_response(response)
     return threshold
 
@@ -31,7 +31,7 @@ def get_telemetry_from_splunk(asid, date_range, baseline_threshold):
     return response
 
 
-def make_request_for_baseline_telemetry(splunk_url, asid, baseline_date_range):
+def make_request_for_baseline_telemetry(splunk_base_url, asid, baseline_date_range):
     search_text = f"""index="spine2vfmmonitor" messageSender={asid}
 | bucket span=1d _time
 | eval day_of_week = strftime(_time,"%A")
@@ -42,7 +42,7 @@ def make_request_for_baseline_telemetry(splunk_url, asid, baseline_date_range):
 | eval avgmin2std=average-(stdd*2)
 | fields - stdd"""
     response = make_splunk_request(
-        splunk_url, baseline_date_range, search_text)
+        f"{splunk_base_url}/search/jobs/export", baseline_date_range, search_text)
     return response
 
 
