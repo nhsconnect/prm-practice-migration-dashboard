@@ -29,64 +29,42 @@ def splunk_request(monkeypatch):
 
 
 def test_get_baseline_threshold_from_splunk_data_extracts_threshold_from_splunk_telemetry(splunk_response):
-    baseline_date_range = {"start_date": date(
-        2021, 4, 6), "end_date": date(2021, 6, 28)}
-
     splunk_response.return_value = Mock(read=lambda: b"""_time",count,avgmin2std
 "2021-09-06T00:00:00.000+0000",2,"4537.33933970307""", status=200)
 
     baseline_threshold = get_baseline_threshold_from_splunk_data(
-        "", anAsid(), baseline_date_range)
+        "", anAsid(), aDateRange())
 
     assert baseline_threshold == "4537.33933970307"
 
 
 def test_get_baseline_threshold_from_splunk_data_handles_no_results(splunk_response):
-    baseline_date_range = {
-        "start_date": date(2021, 4, 6),
-        "end_date": date(2021, 6, 28)
-    }
     splunk_response.return_value = Mock(read=lambda: b"""_time",count,avgmin2std
 "2021-09-06T00:00:00.000+0000",0,""0""", status=200)
 
     with pytest.raises(ValueError, match="Threshold is not a positive value"):
-        get_baseline_threshold_from_splunk_data(
-            "", anAsid(), baseline_date_range)
+        get_baseline_threshold_from_splunk_data("", anAsid(), aDateRange())
 
 
 def test_get_baseline_threshold_from_splunk_data_handles_http_response_failure(splunk_response):
-    baseline_date_range = {
-        "start_date": date(2021, 4, 6),
-        "end_date": date(2021, 6, 28)
-    }
-
     splunk_response.return_value = Mock(status=404)
 
     with pytest.raises(SplunkQueryError, match="Splunk request returned a 404 code"):
-        get_baseline_threshold_from_splunk_data(
-            "", anAsid(), baseline_date_range)
+        get_baseline_threshold_from_splunk_data("", anAsid(), aDateRange())
 
 
 def test_get_baseline_threshold_from_splunk_data_handles_parse_failure(splunk_response):
-    baseline_date_range = {
-        "start_date": date(2021, 4, 6),
-        "end_date": date(2021, 6, 28)
-    }
-
     splunk_response.return_value = Mock(
         read=lambda: "this-is-not-a-byte-string", status=200)
 
     with pytest.raises(SplunkParseError):
         get_baseline_threshold_from_splunk_data(
-            "", anAsid(), baseline_date_range)
+            "", anAsid(), aDateRange())
 
 
 def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_request):
     asid = anAsid()
-    baseline_date_range = {
-        "start_date": date(2021, 4, 6),
-        "end_date": date(2021, 6, 28)
-    }
+    baseline_date_range = aDateRange()
     splunk_base_url = "https://test-splunk"
 
     get_baseline_threshold_from_splunk_data(
@@ -111,38 +89,29 @@ def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_re
 
 
 def test_get_telemetry_from_splunk_get_cutover_telemetry(splunk_response):
-    date_range = {
-        "start_date": date(2021, 6, 29),
-        "end_date": date(2021, 7, 19)}
     threshold = "4537.33933970307"
 
     splunk_response.return_value = Mock(read=lambda: b"""_time",count,avgmin2std
 "2021-09-06T00:00:00.000+0000",2,"4537.33933970307""", status=200)
 
-    telemetry = get_telemetry_from_splunk("", anAsid(), date_range, threshold)
+    telemetry = get_telemetry_from_splunk(
+        "", anAsid(), aDateRange(), threshold)
 
     assert telemetry == splunk_response.return_value
 
 
 def test_get_telemetry_from_splunk_handles_http_response_failure(splunk_response):
-    date_range = {
-        "start_date": date(2021, 6, 29),
-        "end_date": date(2021, 7, 19)
-    }
     threshold = "4537.33933970307"
 
     splunk_response.return_value = Mock(status=404)
 
     with pytest.raises(SplunkQueryError, match="Splunk request returned a 404 code"):
-        get_telemetry_from_splunk("", anAsid(), date_range, threshold)
+        get_telemetry_from_splunk("", anAsid(), aDateRange(), threshold)
 
 
 def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
     asid = anAsid()
-    date_range = {
-        "start_date": date(2021, 6, 29),
-        "end_date": date(2021, 7, 19)
-    }
+    date_range = aDateRange()
     threshold = "4537.33933970307"
     splunk_base_url = "https://test-splunk"
 
@@ -166,3 +135,8 @@ def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
 
 def anAsid():
     return "12345"
+
+
+def aDateRange():
+    return {"start_date": date(
+        2021, 4, 6), "end_date": date(2021, 6, 28)}
