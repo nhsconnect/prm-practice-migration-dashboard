@@ -66,7 +66,7 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
     return "ok"
 
 
-@app.lambda_function(name='export-splunk-data')
+@app.lambda_function(name='splunk-data-exporter')
 def export_splunk_data(event, context):
     occurrences_bucket_name = os.environ['OCCURRENCES_BUCKET_NAME']
     asid_lookup_bucket_name = os.environ['ASID_LOOKUP_BUCKET_NAME']
@@ -109,9 +109,15 @@ def export_splunk_data(event, context):
         pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
         post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
         upload_telemetry(
-            s3, telemetry_bucket_name, pre_cutover_telemetry, pre_cutover_telemetry_filename)
+            s3,
+            telemetry_bucket_name,
+            pre_cutover_telemetry,
+            pre_cutover_telemetry_filename)
         upload_telemetry(
-            s3, telemetry_bucket_name, post_cutover_telemetry, post_cutover_telemetry_filename)
+            s3,
+            telemetry_bucket_name,
+            post_cutover_telemetry,
+            post_cutover_telemetry_filename)
 
     return "ok"
 

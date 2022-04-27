@@ -61,4 +61,18 @@ variable "metrics_calculator_handler_name" {
   type        = string
   description = "Handler function name for the metrics calculator"
 }
+
+variable "splunk_data_exporter_function_name" {
+  type    = string
+  default = "splunk_data_exporter"
+}
+
+variable "splunk_data_exporter_handler_name" {
+  type        = string
+  description = "Handler function name for the metrics calculator"
+}
+
+variable "splunk_api_base_url" {
+  type        = string
+  description = "Base URL for accessing the Splunk API"
 }

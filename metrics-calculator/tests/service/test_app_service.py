@@ -113,7 +113,7 @@ def test_export_splunk_data(
         asid_lookup_bucket_name, s3, ods_code, old_asid, new_asid)
     create_mock_splunk_data(splunk, old_asid)
 
-    response = test_client.lambda_.invoke('export-splunk-data')
+    response = test_client.lambda_.invoke('splunk-data-exporter')
     assert response.payload == "ok"
 
     pre_cutover_telemetry_obj = telemetry_bucket_name.Object(
