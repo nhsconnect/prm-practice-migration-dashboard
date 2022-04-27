@@ -48,16 +48,17 @@ variable "metrics_calculator_function_name" {
 }
 
 variable "metrics_calculator_deployment_bucket_name" {
-  type    = string
+  type        = string
   description = "Name of bucket where the metrics calculator package is deployed"
 }
 
 variable "metrics_calculator_code_key" {
-  type    = string
+  type        = string
   description = "Object key for metrics calculator deployed code"
 }
 
 variable "metrics_calculator_handler_name" {
-  type    = string
+  type        = string
   description = "Handler function name for the metrics calculator"
+}
 }

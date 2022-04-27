@@ -4,17 +4,20 @@ resource "aws_lambda_function" "metrics_calculator_function" {
   handler       = var.metrics_calculator_handler_name
   timeout       = 120
 
-  runtime       = "python3.9"
+  runtime = "python3.9"
 
-  s3_bucket     = var.metrics_calculator_deployment_bucket_name
-  s3_key        = var.metrics_calculator_code_key
+  s3_bucket = var.metrics_calculator_deployment_bucket_name
+  s3_key    = var.metrics_calculator_code_key
 
   environment {
     variables = {
-      ASID_LOOKUP_BUCKET_NAME   = var.asid_lookup_bucket_name
-      METRICS_BUCKET_NAME   = var.metrics_bucket_name
-      OCCURRENCES_BUCKET_NAME   = var.migration_occurrences_bucket_name
-      TELEMETRY_BUCKET_NAME = var.telemetry_bucket_name
+      ASID_LOOKUP_BUCKET_NAME = var.asid_lookup_bucket_name
+      METRICS_BUCKET_NAME     = var.metrics_bucket_name
+      OCCURRENCES_BUCKET_NAME = var.migration_occurrences_bucket_name
+      TELEMETRY_BUCKET_NAME   = var.telemetry_bucket_name
+    }
+  }
+}
     }
   }
 }
