@@ -71,6 +71,7 @@ def export_splunk_data(event, context):
     occurrences_bucket_name = os.environ['OCCURRENCES_BUCKET_NAME']
     asid_lookup_bucket_name = os.environ['ASID_LOOKUP_BUCKET_NAME']
     telemetry_bucket_name = os.environ['TELEMETRY_BUCKET_NAME']
+    splunk_base_url = os.environ['SPLUNK_BASE_URL']
 
     s3 = get_s3_resource()
     known_migrations = get_migration_occurrences(
@@ -90,14 +91,16 @@ def export_splunk_data(event, context):
             migration["date"])
 
         baseline_threshold = get_baseline_threshold_from_splunk_data(
-            old_asid, baseline_date_range)
+            splunk_base_url, old_asid, baseline_date_range)
 
         pre_cutover_telemetry = get_telemetry_from_splunk(
+            splunk_base_url,
             old_asid,
             baseline_threshold,
             pre_cutover_date_range
         )
         post_cutover_telemetry = get_telemetry_from_splunk(
+            splunk_base_url,
             new_asid,
             baseline_threshold,
             post_cutover_date_range
@@ -105,8 +108,10 @@ def export_splunk_data(event, context):
 
         pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
         post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
-        upload_telemetry(s3, telemetry_bucket_name, pre_cutover_telemetry, pre_cutover_telemetry_filename)
-        upload_telemetry(s3, telemetry_bucket_name, post_cutover_telemetry, post_cutover_telemetry_filename)
+        upload_telemetry(
+            s3, telemetry_bucket_name, pre_cutover_telemetry, pre_cutover_telemetry_filename)
+        upload_telemetry(
+            s3, telemetry_bucket_name, post_cutover_telemetry, post_cutover_telemetry_filename)
 
     return "ok"
 
