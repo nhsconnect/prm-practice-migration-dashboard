@@ -43,7 +43,7 @@ resource "aws_lambda_function" "splunk_data_exporter_function" {
       ASID_LOOKUP_BUCKET_NAME = var.asid_lookup_bucket_name
       OCCURRENCES_BUCKET_NAME = var.migration_occurrences_bucket_name
       TELEMETRY_BUCKET_NAME   = var.telemetry_bucket_name
-      SPLUNK_BASE_URL         = var.splunk_api_base_url
+      SPLUNK_HOST             = var.splunk_api_host
     }
   }
 }

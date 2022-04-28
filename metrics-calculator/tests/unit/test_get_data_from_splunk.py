@@ -68,10 +68,10 @@ def test_get_baseline_threshold_from_splunk_data_handles_parse_failure(splunk_re
 def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_request):
     asid = anAsid()
     baseline_date_range = aDateRange()
-    splunk_base_url = "test-splunk"
+    splunk_host = "test-splunk"
 
     get_baseline_threshold_from_splunk_data(
-        splunk_base_url, asid, baseline_date_range)
+        splunk_host, asid, baseline_date_range)
 
     expected_request_body = {
         "output_mode": "csv",
@@ -87,7 +87,7 @@ def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_re
 | eval avgmin2std=average-(stdd*2)
 | fields - stdd"""
     }
-    splunk_request["connection"].assert_called_once_with(splunk_base_url)
+    splunk_request["connection"].assert_called_once_with(splunk_host)
     splunk_request["request"].assert_called_once_with(
         "POST", "/search/jobs/export", expected_request_body)
 
@@ -117,9 +117,9 @@ def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
     asid = anAsid()
     date_range = aDateRange()
     threshold = "4537.33933970307"
-    splunk_base_url = "test-splunk"
+    splunk_host = "test-splunk"
 
-    get_telemetry_from_splunk(splunk_base_url, asid, date_range, threshold)
+    get_telemetry_from_splunk(splunk_host, asid, date_range, threshold)
 
     expected_request_body = {
         "output_mode": "csv",
@@ -133,7 +133,7 @@ def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
 | eval avgmin2std={threshold}
 | fields - day_of_week"""
     }
-    splunk_request["connection"].assert_called_once_with(splunk_base_url)
+    splunk_request["connection"].assert_called_once_with(splunk_host)
     splunk_request["request"].assert_called_once_with(
         "POST", "/search/jobs/export", expected_request_body)
 

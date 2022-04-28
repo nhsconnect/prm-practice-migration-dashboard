@@ -72,7 +72,7 @@ variable "splunk_data_exporter_handler_name" {
   description = "Handler function name for the metrics calculator"
 }
 
-variable "splunk_api_base_url" {
+variable "splunk_api_host" {
   type        = string
-  description = "Base URL for accessing the Splunk API"
+  description = "Splunk API hostname"
 }

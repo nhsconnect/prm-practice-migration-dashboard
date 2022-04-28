@@ -11,14 +11,14 @@ class SplunkParseError(Exception):
 
 
 def get_baseline_threshold_from_splunk_data(
-        splunk_base_url, asid, baseline_date_range):
+        splunk_host, asid, baseline_date_range):
     response = make_request_for_baseline_telemetry(
-        splunk_base_url, asid, baseline_date_range)
+        splunk_host, asid, baseline_date_range)
     threshold = parse_threshold_from_splunk_response(response)
     return threshold
 
 
-def get_telemetry_from_splunk(splunk_base_url, asid, date_range, baseline_threshold):
+def get_telemetry_from_splunk(splunk_host, asid, date_range, baseline_threshold):
     search_text = f"""index="spine2vfmmonitor" messageSender={asid}
 | timechart span=1d count
 | fillnull
@@ -26,11 +26,11 @@ def get_telemetry_from_splunk(splunk_base_url, asid, date_range, baseline_thresh
 | where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
 | eval avgmin2std={baseline_threshold}
 | fields - day_of_week"""
-    response = make_splunk_request(splunk_base_url, date_range, search_text)
+    response = make_splunk_request(splunk_host, date_range, search_text)
     return response
 
 
-def make_request_for_baseline_telemetry(splunk_base_url, asid, baseline_date_range):
+def make_request_for_baseline_telemetry(splunk_host, asid, baseline_date_range):
     search_text = f"""index="spine2vfmmonitor" messageSender={asid}
 | bucket span=1d _time
 | eval day_of_week = strftime(_time,"%A")
@@ -41,12 +41,12 @@ def make_request_for_baseline_telemetry(splunk_base_url, asid, baseline_date_ran
 | eval avgmin2std=average-(stdd*2)
 | fields - stdd"""
     response = make_splunk_request(
-        splunk_base_url, baseline_date_range, search_text)
+        splunk_host, baseline_date_range, search_text)
     return response
 
 
-def make_splunk_request(splunk_base_url, date_range, search_text):
-    connection = HTTPSConnection(splunk_base_url)
+def make_splunk_request(splunk_host, date_range, search_text):
+    connection = HTTPSConnection(splunk_host)
     connection.connect()
     request_body = {
         "output_mode": "csv",
