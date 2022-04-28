@@ -10,7 +10,7 @@ from chalicelib.lookup_asids import AsidLookupError, lookup_asids
 from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
 from chalicelib.migration_occurrences import get_migration_occurrences
 from chalicelib.s3 import get_s3_resource, write_object_s3
-from chalicelib.telemetry import get_telemetry
+from chalicelib.telemetry import get_telemetry, upload_telemetry
 from chalicelib.calculate_date_range import calculate_baseline_date_range, calculate_pre_cutover_date_range, calculate_post_cutover_date_range
 
 app = Chalice(app_name='metrics-calculator')
@@ -134,7 +134,3 @@ def calculate_mean_cutover(metrics):
     rounded_mean = Decimal(mean).quantize(
         Decimal('.1'), rounding=ROUND_HALF_UP)
     return f"{rounded_mean}"
-
-
-def upload_telemetry(s3, bucket_name, telemetry_data, filename):
-    pass

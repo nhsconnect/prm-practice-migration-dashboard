@@ -130,7 +130,8 @@ def mock_defaults(
         occurrences_mock,
         lookup_asids_mock,
         get_baseline_threshold_from_splunk_data_mock,
-        get_telemetry_from_splunk_mock):
+        get_telemetry_from_splunk_mock,
+        upload_telemetry_mock):
     pass
 
 
