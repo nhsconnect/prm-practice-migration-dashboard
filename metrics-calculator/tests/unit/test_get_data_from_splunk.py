@@ -25,7 +25,10 @@ def splunk_request(monkeypatch):
         request=request_mock, getresponse=Mock(return_value=response_mock)))
     monkeypatch.setattr(
         "chalicelib.get_data_from_splunk.HTTPSConnection", connection_mock)
-    yield request_mock
+    yield {
+        "connection": connection_mock,
+        "request": request_mock
+    }
 
 
 def test_get_baseline_threshold_from_splunk_data_extracts_threshold_from_splunk_telemetry(splunk_response):
@@ -65,7 +68,7 @@ def test_get_baseline_threshold_from_splunk_data_handles_parse_failure(splunk_re
 def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_request):
     asid = anAsid()
     baseline_date_range = aDateRange()
-    splunk_base_url = "https://test-splunk"
+    splunk_base_url = "test-splunk"
 
     get_baseline_threshold_from_splunk_data(
         splunk_base_url, asid, baseline_date_range)
@@ -84,8 +87,9 @@ def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_re
 | eval avgmin2std=average-(stdd*2)
 | fields - stdd"""
     }
-    splunk_request.assert_called_once_with(
-        "POST", f"{splunk_base_url}/search/jobs/export", expected_request_body)
+    splunk_request["connection"].assert_called_once_with(splunk_base_url)
+    splunk_request["request"].assert_called_once_with(
+        "POST", "/search/jobs/export", expected_request_body)
 
 
 def test_get_telemetry_from_splunk_get_cutover_telemetry(splunk_response):
@@ -113,7 +117,7 @@ def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
     asid = anAsid()
     date_range = aDateRange()
     threshold = "4537.33933970307"
-    splunk_base_url = "https://test-splunk"
+    splunk_base_url = "test-splunk"
 
     get_telemetry_from_splunk(splunk_base_url, asid, date_range, threshold)
 
@@ -129,8 +133,9 @@ def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
 | eval avgmin2std={threshold}
 | fields - day_of_week"""
     }
-    splunk_request.assert_called_once_with(
-        "POST", f"{splunk_base_url}/search/jobs/export", expected_request_body)
+    splunk_request["connection"].assert_called_once_with(splunk_base_url)
+    splunk_request["request"].assert_called_once_with(
+        "POST", "/search/jobs/export", expected_request_body)
 
 
 def anAsid():

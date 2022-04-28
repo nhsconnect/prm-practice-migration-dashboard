@@ -26,8 +26,7 @@ def get_telemetry_from_splunk(splunk_base_url, asid, date_range, baseline_thresh
 | where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
 | eval avgmin2std={baseline_threshold}
 | fields - day_of_week"""
-    response = make_splunk_request(
-        f"{splunk_base_url}/search/jobs/export", date_range, search_text)
+    response = make_splunk_request(splunk_base_url, date_range, search_text)
     return response
 
 
@@ -42,19 +41,20 @@ def make_request_for_baseline_telemetry(splunk_base_url, asid, baseline_date_ran
 | eval avgmin2std=average-(stdd*2)
 | fields - stdd"""
     response = make_splunk_request(
-        f"{splunk_base_url}/search/jobs/export", baseline_date_range, search_text)
+        splunk_base_url, baseline_date_range, search_text)
     return response
 
 
-def make_splunk_request(splunk_url, date_range, search_text):
-    connection = HTTPSConnection("splunk-url")
+def make_splunk_request(splunk_base_url, date_range, search_text):
+    connection = HTTPSConnection(splunk_base_url)
+    connection.connect()
     request_body = {
         "output_mode": "csv",
         "earliest_time": date_range["start_date"],
         "latest_time": date_range["end_date"],
         "search": search_text
     }
-    connection.request('POST', splunk_url, request_body)
+    connection.request('POST', "/search/jobs/export", request_body)
     response = connection.getresponse()
     if response.status != 200:
         raise SplunkQueryError(
