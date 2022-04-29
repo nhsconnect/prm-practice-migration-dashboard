@@ -82,6 +82,7 @@ def export_splunk_data(event, context):
             s3, asid_lookup_bucket_name, migration)
         old_asid = asid_lookup["old"]["asid"]
         new_asid = asid_lookup["new"]["asid"]
+        token = "this-is-a-token"
 
         baseline_date_range = calculate_baseline_date_range(
             migration["date"])
@@ -91,19 +92,21 @@ def export_splunk_data(event, context):
             migration["date"])
 
         baseline_threshold = get_baseline_threshold_from_splunk_data(
-            splunk_host, old_asid, baseline_date_range)
+            splunk_host, token, old_asid, baseline_date_range)
 
         pre_cutover_telemetry = get_telemetry_from_splunk(
             splunk_host,
+            token,
             old_asid,
-            baseline_threshold,
-            pre_cutover_date_range
+            pre_cutover_date_range,
+            baseline_threshold
         )
         post_cutover_telemetry = get_telemetry_from_splunk(
             splunk_host,
+            token,
             new_asid,
-            baseline_threshold,
-            post_cutover_date_range
+            post_cutover_date_range,
+            baseline_threshold
         )
 
         pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"

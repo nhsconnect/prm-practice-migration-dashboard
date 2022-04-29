@@ -429,8 +429,10 @@ def test_export_splunk_data_queries_splunk_for_baseline_threshold(
 
     export_splunk_data({}, {})
 
+    token = "this-is-a-token"
     get_baseline_threshold_from_splunk_data_mock.assert_called_once_with(
         exporter_lambda_env_vars["SPLUNK_HOST"],
+        token,
         old_asid,
         calculate_baseline_date_range_mock.return_value)
 
@@ -462,16 +464,19 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
 
     export_splunk_data({}, {})
 
+    token = "this-is-a-token"
     get_telemetry_from_splunk_mock.assert_any_call(
         exporter_lambda_env_vars["SPLUNK_HOST"],
+        token,
         old_asid,
-        baseline_threshold,
-        calculate_pre_cutover_date_range_mock.return_value)
+        calculate_pre_cutover_date_range_mock.return_value,
+        baseline_threshold)
     get_telemetry_from_splunk_mock.assert_any_call(
         exporter_lambda_env_vars["SPLUNK_HOST"],
+        token,
         new_asid,
-        baseline_threshold,
-        calculate_post_cutover_date_range_mock.return_value)
+        calculate_post_cutover_date_range_mock.return_value,
+        baseline_threshold)
 
 
 def test_export_splunk_data_uploads_telemetry_to_s3(
