@@ -31,6 +31,11 @@ def s3_resource_mock(monkeypatch):
 
 
 @pytest.fixture
+def ssm_client_mock(monkeypatch):
+    monkeypatch.setattr("app.get_ssm_client", Mock())
+
+
+@pytest.fixture
 def telemetry_mock(monkeypatch):
     old_telemetry = old_telemetry_generator()
     new_telemetry = new_telemetry_generator()
@@ -74,6 +79,13 @@ def calculate_post_cutover_date_range_mock(monkeypatch):
     mock = Mock(
         return_value={"start_date": date.today() + timedelta(1), "end_date": date.today() + timedelta(2)})
     monkeypatch.setattr("app.calculate_post_cutover_date_range", mock)
+    yield mock
+
+
+@pytest.fixture
+def get_splunk_api_token_mock(monkeypatch):
+    mock = Mock(return_value="mock-splunk-api-token")
+    monkeypatch.setattr("app.get_splunk_api_token", mock)
     yield mock
 
 
@@ -124,12 +136,14 @@ def upload_migrations_mock(monkeypatch):
 @pytest.fixture(scope="function")
 def mock_defaults(
         s3_resource_mock,
+        ssm_client_mock,
         calculator_lambda_env_vars,
         exporter_lambda_env_vars,
         telemetry_mock,
         occurrences_mock,
         lookup_asids_mock,
         get_baseline_threshold_from_splunk_data_mock,
+        get_splunk_api_token_mock,
         get_telemetry_from_splunk_mock,
         upload_telemetry_mock):
     pass
@@ -407,12 +421,62 @@ def test_export_splunk_data_gets_post_cutover_date_range(
         migration_occurrence["date"])
 
 
+def test_export_splunk_data_does_not_get_splunk_api_token_when_there_are_no_migration_occurrences(
+        mock_defaults,
+        occurrences_mock,
+        get_splunk_api_token_mock):
+    occurrences_mock.return_value = []
+
+    export_splunk_data({}, {})
+
+    get_splunk_api_token_mock.assert_not_called()
+
+
+def test_export_splunk_data_gets_splunk_api_token(
+        mock_defaults,
+        occurrences_mock,
+        get_splunk_api_token_mock):
+    migration_occurrence = {
+        "ods_code": "A32323",
+        "ccg_name": "Test CCG",
+        "practice_name": "Test Surgery",
+        "date": date(2021, 7, 11)
+    }
+    occurrences_mock.return_value = [migration_occurrence]
+
+    export_splunk_data({}, {})
+
+    get_splunk_api_token_mock.assert_called_with(
+        ANY,
+        "/prod/splunk-api-token"
+    )
+
+
+def test_export_splunk_data_gets_splunk_api_token_once_regardless_of_number_of_migration_occurrences(
+        mock_defaults,
+        occurrences_mock,
+        get_splunk_api_token_mock):
+    migration_occurrence = {
+        "ods_code": "A32323",
+        "ccg_name": "Test CCG",
+        "practice_name": "Test Surgery",
+        "date": date(2021, 7, 11)
+    }
+    occurrences_mock.return_value = [
+        migration_occurrence, migration_occurrence]
+
+    export_splunk_data({}, {})
+
+    get_splunk_api_token_mock.assert_called_once()
+
+
 def test_export_splunk_data_queries_splunk_for_baseline_threshold(
         mock_defaults,
         occurrences_mock,
         calculate_baseline_date_range_mock,
         lookup_asids_mock,
         exporter_lambda_env_vars,
+        get_splunk_api_token_mock,
         get_baseline_threshold_from_splunk_data_mock):
     migration_occurrence = {
         "ods_code": "A32323",
@@ -429,10 +493,9 @@ def test_export_splunk_data_queries_splunk_for_baseline_threshold(
 
     export_splunk_data({}, {})
 
-    token = "this-is-a-token"
     get_baseline_threshold_from_splunk_data_mock.assert_called_once_with(
         exporter_lambda_env_vars["SPLUNK_HOST"],
-        token,
+        get_splunk_api_token_mock.return_value,
         old_asid,
         calculate_baseline_date_range_mock.return_value)
 
@@ -444,6 +507,7 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         calculate_post_cutover_date_range_mock,
         lookup_asids_mock,
         exporter_lambda_env_vars,
+        get_splunk_api_token_mock,
         get_baseline_threshold_from_splunk_data_mock,
         get_telemetry_from_splunk_mock):
     migration_occurrence = {
@@ -464,16 +528,15 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
 
     export_splunk_data({}, {})
 
-    token = "this-is-a-token"
     get_telemetry_from_splunk_mock.assert_any_call(
         exporter_lambda_env_vars["SPLUNK_HOST"],
-        token,
+        get_splunk_api_token_mock.return_value,
         old_asid,
         calculate_pre_cutover_date_range_mock.return_value,
         baseline_threshold)
     get_telemetry_from_splunk_mock.assert_any_call(
         exporter_lambda_env_vars["SPLUNK_HOST"],
-        token,
+        get_splunk_api_token_mock.return_value,
         new_asid,
         calculate_post_cutover_date_range_mock.return_value,
         baseline_threshold)

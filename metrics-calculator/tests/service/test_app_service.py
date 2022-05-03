@@ -5,7 +5,7 @@ import json
 import pytest
 import os
 
-from moto import mock_s3
+from moto import mock_s3, mock_ssm
 from unittest.mock import MagicMock, Mock
 
 from chalice.test import Client
@@ -35,6 +35,12 @@ def aws_credentials():
 def s3(aws_credentials):
     with mock_s3():
         yield boto3.resource('s3', region_name='us-east-1')
+
+
+@pytest.fixture(scope='function')
+def ssm(aws_credentials):
+    with mock_ssm():
+        yield boto3.client('ssm', region_name='eu-west-2')
 
 
 @pytest.fixture(scope="function")
@@ -113,7 +119,7 @@ def test_calculate_dashboard_metrics_from_telemetry(
 
 
 def test_export_splunk_data(
-        test_client, exporter_lambda_env_vars, s3, splunk_response):
+        test_client, exporter_lambda_env_vars, s3, ssm, splunk_response):
     ods_code = "A12345"
     old_asid = "1234"
     new_asid = "5678"
@@ -123,6 +129,7 @@ def test_export_splunk_data(
     telemetry_bucket = s3.create_bucket(Bucket=telemetry_bucket_name)
     ccg = "My CCG"
     practice = "My First Surgery"
+    set_splunk_api_token(ssm)
     create_occurrences_data(
         occurrences_bucket_name, s3, ods_code, ccg, practice)
     create_asid_lookup_data(
@@ -143,6 +150,14 @@ def test_export_splunk_data(
     post_cutover_telemetry = post_cutover_telemetry_obj['Body'].read()
     unzipped_post_cutover_telemetry = gzip.decompress(post_cutover_telemetry)
     assert unzipped_post_cutover_telemetry == SPINE_POST_CUTOVER_DATA
+
+
+def set_splunk_api_token(ssm):
+    ssm.put_parameter(
+        Name="/prod/splunk-api-token",
+        KeyId="a-test-key",
+        Value="a-splunk-token",
+        Type="SecureString")
 
 
 def create_occurrences_data(occurrences_bucket_name, s3, ods_code, ccg, practice):
