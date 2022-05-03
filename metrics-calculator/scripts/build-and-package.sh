@@ -35,8 +35,9 @@ aws cloudformation package \
 
 # Outputs to use in tfvars on the metrics calculator stack
 JSON=$(cat "./build/packaged-cf.json")
-HANDLER=$(echo "${JSON}" | jq .Resources.CalculateDashboardMetricsFromTelemetry.Properties.Handler | tr -d '"')
+METRICS_CALC_HANDLER=$(echo "${JSON}" | jq .Resources.CalculateDashboardMetricsFromTelemetry.Properties.Handler | tr -d '"')
+SPLUNK_EXPORTER_HANDLER=$(echo "${JSON}" | jq .Resources.SplunkDataExporter.Properties.Handler | tr -d '"')
 CODE_URI=$(echo "${JSON}" | jq .Resources.CalculateDashboardMetricsFromTelemetry.Properties.CodeUri | tr -d '"' | cut -c 7-)
 OBJECT_KEY="${CODE_URI#*/}"
 echo "Merge the below into the metrics calculator stack's Terraform vars file:"
-echo "{ \"metrics_calculator_deployment_bucket_name\": \"${BUCKET_NAME}\", \"metrics_calculator_code_key\": \"${OBJECT_KEY}\", \"metrics_calculator_handler_name\": \"${HANDLER}\" }" | jq
+echo "{ \"metrics_calculator_deployment_bucket_name\": \"${BUCKET_NAME}\", \"metrics_calculator_code_key\": \"${OBJECT_KEY}\", \"metrics_calculator_handler_name\": \"${METRICS_CALC_HANDLER}\", \"splunk_data_exporter_handler_name\": \"${SPLUNK_EXPORTER_HANDLER}\" }" | jq
