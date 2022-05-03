@@ -25,10 +25,11 @@ def ssm(aws_credentials):
 def test_get_splunk_api_token_returns_api_token(ssm):
     expected_token_value = "this-is-a-token"
     parameter_name = "Splunk API token"
-    ssm.put_parameter(Name=parameter_name, Value=expected_token_value, Type="String")
+    ssm.put_parameter(
+        Name=parameter_name,
+        KeyId="custom-key-id",
+        Value=expected_token_value, Type="SecureString")
 
     returned_token_value = get_splunk_api_token(ssm, parameter_name)
+
     assert returned_token_value == expected_token_value
-
-
-
