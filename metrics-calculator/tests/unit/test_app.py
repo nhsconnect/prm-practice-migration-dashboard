@@ -185,11 +185,7 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_practice_details_fr
         lookup_asids_mock,
         engine_mock,
         upload_migrations_mock):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
 
     calculate_dashboard_metrics_from_telemetry({}, {})
@@ -350,12 +346,7 @@ def test_export_splunk_data_gets_asids_for_ods_code_in_occurrences_data(
         occurrences_mock,
         lookup_asids_mock,
         exporter_lambda_env_vars):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date.today()
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
@@ -371,12 +362,7 @@ def test_export_splunk_data_gets_baseline_date_range(
         mock_defaults,
         occurrences_mock,
         calculate_baseline_date_range_mock):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
@@ -389,12 +375,7 @@ def test_export_splunk_data_gets_pre_cutover_date_range(
         mock_defaults,
         occurrences_mock,
         calculate_pre_cutover_date_range_mock):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
@@ -407,12 +388,7 @@ def test_export_splunk_data_gets_post_cutover_date_range(
         mock_defaults,
         occurrences_mock,
         calculate_post_cutover_date_range_mock):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
@@ -436,12 +412,7 @@ def test_export_splunk_data_gets_splunk_api_token(
         mock_defaults,
         occurrences_mock,
         get_splunk_api_token_mock):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
@@ -456,12 +427,7 @@ def test_export_splunk_data_gets_splunk_api_token_once_regardless_of_number_of_m
         mock_defaults,
         occurrences_mock,
         get_splunk_api_token_mock):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [
         migration_occurrence, migration_occurrence]
 
@@ -478,12 +444,7 @@ def test_export_splunk_data_queries_splunk_for_baseline_threshold(
         exporter_lambda_env_vars,
         get_splunk_api_token_mock,
         get_baseline_threshold_from_splunk_data_mock):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     old_asid = "12345"
     lookup_asids_mock.return_value = {
@@ -510,12 +471,7 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         get_splunk_api_token_mock,
         get_baseline_threshold_from_splunk_data_mock,
         get_telemetry_from_splunk_mock):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     old_asid = "12345"
     new_asid = "09876"
@@ -549,12 +505,7 @@ def test_export_splunk_data_uploads_telemetry_to_s3(
         lookup_asids_mock,
         exporter_lambda_env_vars,
         get_telemetry_from_splunk_mock):
-    migration_occurrence = {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     old_asid = "12345"
     new_asid = "09876"
@@ -581,3 +532,12 @@ def test_export_splunk_data_uploads_telemetry_to_s3(
         new_telemetry_data,
         f"{new_asid}-telemetry.csv.gz"
     )
+
+
+def aMigrationOccurrence():
+    return {
+        "ods_code": "A32323",
+        "ccg_name": "Test CCG",
+        "practice_name": "Test Surgery",
+        "date": date(2021, 7, 11)
+    }
