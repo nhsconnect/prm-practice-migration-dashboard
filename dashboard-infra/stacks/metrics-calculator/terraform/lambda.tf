@@ -198,6 +198,25 @@ resource "aws_iam_policy" "splunk_data_exporter_function_policy" {
 EOF
 }
 
+resource "aws_iam_policy" "splunk_api_token_access_policy" {
+  name        = "AllowAccessToSplunkApiToken"
+  description = "Grant read access to the API token used to authenticate with Splunk"
+  policy      = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+          "ssm:GetParameter*"
+      ],
+      "Resource": "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter${var.splunk_api_token_param_name}"
+    }
+  ]
+}
+EOF
+}
+
 resource "aws_iam_role_policy_attachment" "metrics_calculator_function_execution_policy" {
   role       = aws_iam_role.metrics_calculator_function_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
@@ -216,4 +235,9 @@ resource "aws_iam_role_policy_attachment" "metrics_calculator_function_s3_policy
 resource "aws_iam_role_policy_attachment" "splunk_data_exporter_function_s3_policy" {
   role       = aws_iam_role.splunk_data_exporter_function_role.name
   policy_arn = aws_iam_policy.splunk_data_exporter_function_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "splunk_data_exporter_splunk_api_token_policy" {
+  role       = aws_iam_role.splunk_data_exporter_function_role.name
+  policy_arn = aws_iam_policy.splunk_api_token_access_policy.arn
 }

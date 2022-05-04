@@ -1,16 +1,18 @@
-from decimal import ROUND_HALF_UP, Decimal
+import boto3
 import json
 import logging
 import os
-from statistics import fmean
+from decimal import ROUND_HALF_UP, Decimal
 from chalice import Chalice
+from statistics import fmean
 
 from chalicelib.get_data_from_splunk import get_baseline_threshold_from_splunk_data, get_telemetry_from_splunk
+from chalicelib.get_splunk_api_token import get_splunk_api_token
 from chalicelib.lookup_asids import AsidLookupError, lookup_asids
 from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
 from chalicelib.migration_occurrences import get_migration_occurrences
 from chalicelib.s3 import get_s3_resource, write_object_s3
-from chalicelib.telemetry import get_telemetry
+from chalicelib.telemetry import get_telemetry, upload_telemetry
 from chalicelib.calculate_date_range import calculate_baseline_date_range, calculate_pre_cutover_date_range, calculate_post_cutover_date_range
 
 app = Chalice(app_name='metrics-calculator')
@@ -77,6 +79,9 @@ def export_splunk_data(event, context):
     known_migrations = get_migration_occurrences(
         s3, occurrences_bucket_name)
 
+    if len(known_migrations) > 0:
+        ssm = get_ssm_client()
+        splunk_token = get_splunk_api_token(ssm, "/prod/splunk-api-token")
     for migration in known_migrations:
         asid_lookup = lookup_asids(
             s3, asid_lookup_bucket_name, migration)
@@ -91,19 +96,21 @@ def export_splunk_data(event, context):
             migration["date"])
 
         baseline_threshold = get_baseline_threshold_from_splunk_data(
-            splunk_host, old_asid, baseline_date_range)
+            splunk_host, splunk_token, old_asid, baseline_date_range)
 
         pre_cutover_telemetry = get_telemetry_from_splunk(
             splunk_host,
+            splunk_token,
             old_asid,
-            baseline_threshold,
-            pre_cutover_date_range
+            pre_cutover_date_range,
+            baseline_threshold
         )
         post_cutover_telemetry = get_telemetry_from_splunk(
             splunk_host,
+            splunk_token,
             new_asid,
-            baseline_threshold,
-            post_cutover_date_range
+            post_cutover_date_range,
+            baseline_threshold
         )
 
         pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
@@ -122,6 +129,10 @@ def export_splunk_data(event, context):
     return "ok"
 
 
+def get_ssm_client():
+    return boto3.client("ssm", region_name="eu-west-2")
+
+
 def upload_migrations(s3, migrations):
     metrics_bucket_name = os.environ["METRICS_BUCKET_NAME"]
     write_object_s3(
@@ -134,7 +145,3 @@ def calculate_mean_cutover(metrics):
     rounded_mean = Decimal(mean).quantize(
         Decimal('.1'), rounding=ROUND_HALF_UP)
     return f"{rounded_mean}"
-
-
-def upload_telemetry(s3, bucket_name, telemetry_data, filename):
-    pass

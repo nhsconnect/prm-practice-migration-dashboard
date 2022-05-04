@@ -36,7 +36,7 @@ def test_get_baseline_threshold_from_splunk_data_extracts_threshold_from_splunk_
 "2021-09-06T00:00:00.000+0000",2,"4537.33933970307""", status=200)
 
     baseline_threshold = get_baseline_threshold_from_splunk_data(
-        "", anAsid(), aDateRange())
+        "", anApiToken(), anAsid(), aDateRange())
 
     assert baseline_threshold == "4537.33933970307"
 
@@ -46,14 +46,16 @@ def test_get_baseline_threshold_from_splunk_data_handles_no_results(splunk_respo
 "2021-09-06T00:00:00.000+0000",0,""0""", status=200)
 
     with pytest.raises(ValueError, match="Threshold is not a positive value"):
-        get_baseline_threshold_from_splunk_data("", anAsid(), aDateRange())
+        get_baseline_threshold_from_splunk_data(
+            "", anApiToken(), anAsid(), aDateRange())
 
 
 def test_get_baseline_threshold_from_splunk_data_handles_http_response_failure(splunk_response):
     splunk_response.return_value = Mock(status=404)
 
     with pytest.raises(SplunkQueryError, match="Splunk request returned a 404 code"):
-        get_baseline_threshold_from_splunk_data("", anAsid(), aDateRange())
+        get_baseline_threshold_from_splunk_data(
+            "", anApiToken(), anAsid(), aDateRange())
 
 
 def test_get_baseline_threshold_from_splunk_data_handles_parse_failure(splunk_response):
@@ -62,16 +64,17 @@ def test_get_baseline_threshold_from_splunk_data_handles_parse_failure(splunk_re
 
     with pytest.raises(SplunkParseError):
         get_baseline_threshold_from_splunk_data(
-            "", anAsid(), aDateRange())
+            "", anApiToken(), anAsid(), aDateRange())
 
 
 def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_request):
     asid = anAsid()
     baseline_date_range = aDateRange()
     splunk_host = "test-splunk"
+    token = anApiToken()
 
     get_baseline_threshold_from_splunk_data(
-        splunk_host, asid, baseline_date_range)
+        splunk_host, token, asid, baseline_date_range)
 
     expected_request_body = {
         "output_mode": "csv",
@@ -87,21 +90,23 @@ def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_re
 | eval avgmin2std=average-(stdd*2)
 | fields - stdd"""
     }
+    expected_headers = {"Authorization": f"Bearer {token}"}
     splunk_request["connection"].assert_called_once_with(splunk_host)
     splunk_request["request"].assert_called_once_with(
-        "POST", "/search/jobs/export", expected_request_body)
+        "POST", "/search/jobs/export", expected_request_body, expected_headers)
 
 
 def test_get_telemetry_from_splunk_get_cutover_telemetry(splunk_response):
     threshold = "4537.33933970307"
-
-    splunk_response.return_value = Mock(read=lambda: b"""_time",count,avgmin2std
-"2021-09-06T00:00:00.000+0000",2,"4537.33933970307""", status=200)
+    expected_telemetry = b"""_time",count,avgmin2std
+"2021-09-06T00:00:00.000+0000",2,"4537.33933970307"""
+    splunk_response.return_value = Mock(
+        read=lambda: expected_telemetry, status=200)
 
     telemetry = get_telemetry_from_splunk(
-        "", anAsid(), aDateRange(), threshold)
+        "", anApiToken(), anAsid(), aDateRange(), threshold)
 
-    assert telemetry == splunk_response.return_value
+    assert telemetry == expected_telemetry
 
 
 def test_get_telemetry_from_splunk_handles_http_response_failure(splunk_response):
@@ -110,16 +115,18 @@ def test_get_telemetry_from_splunk_handles_http_response_failure(splunk_response
     splunk_response.return_value = Mock(status=404)
 
     with pytest.raises(SplunkQueryError, match="Splunk request returned a 404 code"):
-        get_telemetry_from_splunk("", anAsid(), aDateRange(), threshold)
+        get_telemetry_from_splunk(
+            "", anApiToken(), anAsid(), aDateRange(), threshold)
 
 
-def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
+def test_get_telemetry_from_splunk_makes_correct_request(splunk_request):
     asid = anAsid()
     date_range = aDateRange()
     threshold = "4537.33933970307"
     splunk_host = "test-splunk"
+    token = anApiToken()
 
-    get_telemetry_from_splunk(splunk_host, asid, date_range, threshold)
+    get_telemetry_from_splunk(splunk_host, token, asid, date_range, threshold)
 
     expected_request_body = {
         "output_mode": "csv",
@@ -133,9 +140,10 @@ def test_get_telemetry_from_splunk_has_correct_request_body(splunk_request):
 | eval avgmin2std={threshold}
 | fields - day_of_week"""
     }
+    expected_headers = {"Authorization": f"Bearer {token}"}
     splunk_request["connection"].assert_called_once_with(splunk_host)
     splunk_request["request"].assert_called_once_with(
-        "POST", "/search/jobs/export", expected_request_body)
+        "POST", "/search/jobs/export", expected_request_body, expected_headers)
 
 
 def anAsid():
@@ -143,5 +151,11 @@ def anAsid():
 
 
 def aDateRange():
-    return {"start_date": date(
-        2021, 4, 6), "end_date": date(2021, 6, 28)}
+    return {
+        "start_date": date(2021, 4, 6),
+        "end_date": date(2021, 6, 28)
+    }
+
+
+def anApiToken():
+    return "this-is-a-token"

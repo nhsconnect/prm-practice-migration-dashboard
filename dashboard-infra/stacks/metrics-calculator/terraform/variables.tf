@@ -76,3 +76,8 @@ variable "splunk_api_host" {
   type        = string
   description = "Splunk API hostname"
 }
+
+variable "splunk_api_token_param_name" {
+  type        = string
+  description = "Name of the parameter in SSM Parameter Store containing the Splunk API token"
+}

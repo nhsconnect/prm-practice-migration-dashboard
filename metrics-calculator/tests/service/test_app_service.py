@@ -1,9 +1,11 @@
+import gzip
+
 import boto3
 import json
 import pytest
 import os
 
-from moto import mock_s3
+from moto import mock_s3, mock_ssm
 from unittest.mock import MagicMock, Mock
 
 from chalice.test import Client
@@ -35,6 +37,12 @@ def s3(aws_credentials):
         yield boto3.resource('s3', region_name='us-east-1')
 
 
+@pytest.fixture(scope='function')
+def ssm(aws_credentials):
+    with mock_ssm():
+        yield boto3.client('ssm', region_name='eu-west-2')
+
+
 @pytest.fixture(scope="function")
 def test_client():
     from app import app
@@ -43,29 +51,43 @@ def test_client():
 
 
 @pytest.fixture(scope="function")
-def splunk(monkeypatch):
-    request_mock = Mock()
-    splunk_call_mock = Mock(return_value=MagicMock(getresponse=request_mock))
-    monkeypatch.setattr("app.HTTPSConnection", splunk_call_mock)
-    yield request_mock
+def splunk_response(monkeypatch):
+    response_mock = Mock()
+    connection_mock = Mock(return_value=MagicMock(getresponse=response_mock))
+    monkeypatch.setattr(
+        "chalicelib.get_data_from_splunk.HTTPSConnection", connection_mock)
+    yield response_mock
 
 
 @pytest.fixture(scope="function")
-def lambda_environment_vars():
-    with open('.chalice/config.json') as f:
+def calculator_lambda_env_vars():
+    with open(".chalice/config.json") as f:
         config = json.loads(f.read())
-        yield config["stages"]["dev"]["lambda_functions"]["calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
+        vars = config["stages"]["dev"]["lambda_functions"]["calculate_dashboard_metrics_from_telemetry"]["environment_variables"]
+        for key in vars:
+            os.environ[key] = vars[key]
+        yield vars
+
+
+@pytest.fixture(scope="function")
+def exporter_lambda_env_vars():
+    with open(".chalice/config.json") as f:
+        config = json.loads(f.read())
+        vars = config["stages"]["dev"]["lambda_functions"]["export_splunk_data"]["environment_variables"]
+        for key in vars:
+            os.environ[key] = vars[key]
+        yield vars
 
 
 def test_calculate_dashboard_metrics_from_telemetry(
-        test_client, lambda_environment_vars, s3):
+        test_client, calculator_lambda_env_vars, s3):
     ods_code = "A12345"
     old_asid = "1234"
     new_asid = "5678"
-    occurrences_bucket_name = lambda_environment_vars["OCCURRENCES_BUCKET_NAME"]
-    asid_lookup_bucket_name = lambda_environment_vars["ASID_LOOKUP_BUCKET_NAME"]
-    telemetry_bucket_name = lambda_environment_vars["TELEMETRY_BUCKET_NAME"]
-    metrics_bucket_name = lambda_environment_vars["METRICS_BUCKET_NAME"]
+    occurrences_bucket_name = calculator_lambda_env_vars["OCCURRENCES_BUCKET_NAME"]
+    asid_lookup_bucket_name = calculator_lambda_env_vars["ASID_LOOKUP_BUCKET_NAME"]
+    telemetry_bucket_name = calculator_lambda_env_vars["TELEMETRY_BUCKET_NAME"]
+    metrics_bucket_name = calculator_lambda_env_vars["METRICS_BUCKET_NAME"]
     ccg = "My CCG"
     practice = "My First Surgery"
     create_occurrences_data(
@@ -96,37 +118,46 @@ def test_calculate_dashboard_metrics_from_telemetry(
         }]}
 
 
-@pytest.mark.skip(reason="Won't pass until all functionality implemented")
 def test_export_splunk_data(
-        test_client, lambda_environment_vars, s3, splunk):
+        test_client, exporter_lambda_env_vars, s3, ssm, splunk_response):
     ods_code = "A12345"
     old_asid = "1234"
     new_asid = "5678"
-    occurrences_bucket_name = lambda_environment_vars["OCCURRENCES_BUCKET_NAME"]
-    asid_lookup_bucket_name = lambda_environment_vars["ASID_LOOKUP_BUCKET_NAME"]
-    telemetry_bucket_name = lambda_environment_vars["TELEMETRY_BUCKET_NAME"]
+    occurrences_bucket_name = exporter_lambda_env_vars["OCCURRENCES_BUCKET_NAME"]
+    asid_lookup_bucket_name = exporter_lambda_env_vars["ASID_LOOKUP_BUCKET_NAME"]
+    telemetry_bucket_name = exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"]
+    telemetry_bucket = s3.create_bucket(Bucket=telemetry_bucket_name)
     ccg = "My CCG"
     practice = "My First Surgery"
+    set_splunk_api_token(ssm)
     create_occurrences_data(
         occurrences_bucket_name, s3, ods_code, ccg, practice)
     create_asid_lookup_data(
         asid_lookup_bucket_name, s3, ods_code, old_asid, new_asid)
-    create_mock_splunk_data(splunk, old_asid)
+    create_mock_splunk_data(splunk_response)
 
     response = test_client.lambda_.invoke('splunk-data-exporter')
     assert response.payload == "ok"
 
-    pre_cutover_telemetry_obj = telemetry_bucket_name.Object(
+    pre_cutover_telemetry_obj = telemetry_bucket.Object(
         f"{old_asid}-telemetry.csv.gz").get()
-    pre_cutover_telemetry = pre_cutover_telemetry_obj['Body'].read().decode(
-        'utf-8')
-    assert json.loads(pre_cutover_telemetry) == SPINE_PRE_CUTOVER_DATA
+    pre_cutover_telemetry = pre_cutover_telemetry_obj['Body'].read()
+    unzipped_pre_cutover_telemetry = gzip.decompress(pre_cutover_telemetry)
+    assert unzipped_pre_cutover_telemetry == SPINE_PRE_CUTOVER_DATA
 
-    post_cutover_telemetry_obj = telemetry_bucket_name.Object(
+    post_cutover_telemetry_obj = telemetry_bucket.Object(
         f"{new_asid}-telemetry.csv.gz").get()
-    post_cutover_telemetry = post_cutover_telemetry_obj['Body'].read().decode(
-        'utf-8')
-    assert json.loads(post_cutover_telemetry) == SPINE_POST_CUTOVER_DATA
+    post_cutover_telemetry = post_cutover_telemetry_obj['Body'].read()
+    unzipped_post_cutover_telemetry = gzip.decompress(post_cutover_telemetry)
+    assert unzipped_post_cutover_telemetry == SPINE_POST_CUTOVER_DATA
+
+
+def set_splunk_api_token(ssm):
+    ssm.put_parameter(
+        Name="/prod/splunk-api-token",
+        KeyId="a-test-key",
+        Value="a-splunk-token",
+        Type="SecureString")
 
 
 def create_occurrences_data(occurrences_bucket_name, s3, ods_code, ccg, practice):
@@ -188,10 +219,10 @@ def create_metrics_bucket(metrics_bucket_name, s3):
     return metrics_bucket
 
 
-def create_mock_splunk_data(splunk):
+def create_mock_splunk_data(splunk_response):
 
-    splunk.return_value = [
-        lambda: Mock(status=200, read=lambda: SPINE_BASELINE_DATA),
-        lambda: Mock(status=200, read=lambda: SPINE_PRE_CUTOVER_DATA),
-        lambda: Mock(status=200, read=lambda: SPINE_POST_CUTOVER_DATA),
+    splunk_response.side_effect = [
+        Mock(status=200, read=lambda: SPINE_BASELINE_DATA),
+        Mock(status=200, read=lambda: SPINE_PRE_CUTOVER_DATA),
+        Mock(status=200, read=lambda: SPINE_POST_CUTOVER_DATA),
     ]
