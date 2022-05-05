@@ -1,7 +1,8 @@
+import pytest as pytest
+import urllib.parse
+
 from datetime import date
 from unittest.mock import Mock, MagicMock, ANY
-
-import pytest as pytest
 
 from chalicelib.get_data_from_splunk import get_baseline_threshold_from_splunk_data, SplunkQueryError, SplunkParseError, \
     get_telemetry_from_splunk
@@ -76,11 +77,11 @@ def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_re
     get_baseline_threshold_from_splunk_data(
         splunk_host, token, asid, baseline_date_range)
 
-    expected_request_body = {
+    expected_request_body = urllib.parse.urlencode({
         "output_mode": "csv",
-        "earliest_time": baseline_date_range["start_date"],
-        "latest_time": baseline_date_range["end_date"],
-        "search": f"""index="spine2vfmmonitor" messageSender={asid}
+        "earliest_time": "2021-04-06T00:00:00",
+        "latest_time": "2021-06-28T00:00:00",
+        "search": f"""search index="spine2vfmmonitor" messageSender={asid}
 | bucket span=1d _time
 | eval day_of_week = strftime(_time,"%A")
 | where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
@@ -89,11 +90,11 @@ def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_re
 | eventstats avg(count) as average stdev(count) as stdd
 | eval avgmin2std=average-(stdd*2)
 | fields - stdd"""
-    }
+    })
     expected_headers = {"Authorization": f"Bearer {token}"}
     splunk_request["connection"].assert_called_once_with(splunk_host)
     splunk_request["request"].assert_called_once_with(
-        "POST", "/search/jobs/export", expected_request_body, expected_headers)
+        "POST", "/services/search/jobs/export", expected_request_body, expected_headers)
 
 
 def test_get_telemetry_from_splunk_get_cutover_telemetry(splunk_response):
@@ -128,22 +129,22 @@ def test_get_telemetry_from_splunk_makes_correct_request(splunk_request):
 
     get_telemetry_from_splunk(splunk_host, token, asid, date_range, threshold)
 
-    expected_request_body = {
+    expected_request_body = urllib.parse.urlencode({
         "output_mode": "csv",
-        "earliest_time": date_range["start_date"],
-        "latest_time": date_range["end_date"],
-        "search": f"""index="spine2vfmmonitor" messageSender={asid}
+        "earliest_time": "2021-04-06T00:00:00",
+        "latest_time": "2021-06-28T00:00:00",
+        "search": f"""search index="spine2vfmmonitor" messageSender={asid}
 | timechart span=1d count
 | fillnull
 | eval day_of_week = strftime(_time,"%A")
 | where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
 | eval avgmin2std={threshold}
 | fields - day_of_week"""
-    }
+    })
     expected_headers = {"Authorization": f"Bearer {token}"}
     splunk_request["connection"].assert_called_once_with(splunk_host)
     splunk_request["request"].assert_called_once_with(
-        "POST", "/search/jobs/export", expected_request_body, expected_headers)
+        "POST", "/services/search/jobs/export", expected_request_body, expected_headers)
 
 
 def anAsid():

@@ -1,5 +1,6 @@
 import csv
 from http.client import HTTPSConnection
+import urllib.parse
 
 
 class SplunkQueryError(RuntimeError):
@@ -19,7 +20,7 @@ def get_baseline_threshold_from_splunk_data(
 
 
 def get_telemetry_from_splunk(splunk_host, token, asid, date_range, baseline_threshold):
-    search_text = f"""index="spine2vfmmonitor" messageSender={asid}
+    search_text = f"""search index="spine2vfmmonitor" messageSender={asid}
 | timechart span=1d count
 | fillnull
 | eval day_of_week = strftime(_time,"%A")
@@ -32,7 +33,7 @@ def get_telemetry_from_splunk(splunk_host, token, asid, date_range, baseline_thr
 
 
 def make_request_for_baseline_telemetry(splunk_host, token, asid, baseline_date_range):
-    search_text = f"""index="spine2vfmmonitor" messageSender={asid}
+    search_text = f"""search index="spine2vfmmonitor" messageSender={asid}
 | bucket span=1d _time
 | eval day_of_week = strftime(_time,"%A")
 | where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
@@ -49,19 +50,20 @@ def make_request_for_baseline_telemetry(splunk_host, token, asid, baseline_date_
 def make_splunk_request(splunk_host, token, date_range, search_text):
     connection = HTTPSConnection(splunk_host)
     connection.connect()
-    request_body = {
+    request_body = urllib.parse.urlencode({
         "output_mode": "csv",
-        "earliest_time": date_range["start_date"],
-        "latest_time": date_range["end_date"],
+        "earliest_time": date_range["start_date"].strftime("%Y-%m-%dT%H:%M:%S"),
+        "latest_time": date_range["end_date"].strftime("%Y-%m-%dT%H:%M:%S"),
         "search": search_text
-    }
+    })
     headers = {"Authorization": f"Bearer {token}"}
-    connection.request('POST', "/search/jobs/export", request_body, headers)
+    connection.request(
+        'POST', "/services/search/jobs/export", request_body, headers)
 
     response = connection.getresponse()
     if response.status != 200:
         raise SplunkQueryError(
-            f"Splunk request returned a {response.status} code")
+            f"Splunk request returned a {response.status} code with body {response.read()}")
     return response.read()
 
 
