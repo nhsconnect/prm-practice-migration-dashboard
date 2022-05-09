@@ -26,7 +26,8 @@ def get_telemetry_from_splunk(splunk_host, token, asid, date_range, baseline_thr
 | eval day_of_week = strftime(_time,"%A")
 | where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
 | eval avgmin2std={baseline_threshold}
-| fields - day_of_week"""
+| fields - day_of_week
+| convert timeformat="%Y-%m-%dT%H:%M:%S" ctime(_time)"""
     telemetry = make_splunk_request(
         splunk_host, token, date_range, search_text)
     return telemetry
@@ -41,7 +42,8 @@ def make_request_for_baseline_telemetry(splunk_host, token, asid, baseline_date_
 | outlier action=remove
 | eventstats avg(count) as average stdev(count) as stdd
 | eval avgmin2std=average-(stdd*2)
-| fields - stdd"""
+| fields - stdd
+| convert timeformat="%Y-%m-%dT%H:%M:%S" ctime(_time)"""
     telemetry = make_splunk_request(
         splunk_host, token, baseline_date_range, search_text)
     return telemetry

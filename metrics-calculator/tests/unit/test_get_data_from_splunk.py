@@ -89,7 +89,8 @@ def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_re
 | outlier action=remove
 | eventstats avg(count) as average stdev(count) as stdd
 | eval avgmin2std=average-(stdd*2)
-| fields - stdd"""
+| fields - stdd
+| convert timeformat="%Y-%m-%dT%H:%M:%S" ctime(_time)"""
     })
     expected_headers = {"Authorization": f"Bearer {token}"}
     splunk_request["connection"].assert_called_once_with(splunk_host)
@@ -139,7 +140,8 @@ def test_get_telemetry_from_splunk_makes_correct_request(splunk_request):
 | eval day_of_week = strftime(_time,"%A")
 | where NOT (day_of_week="Saturday" OR day_of_week="Sunday")
 | eval avgmin2std={threshold}
-| fields - day_of_week"""
+| fields - day_of_week
+| convert timeformat="%Y-%m-%dT%H:%M:%S" ctime(_time)"""
     })
     expected_headers = {"Authorization": f"Bearer {token}"}
     splunk_request["connection"].assert_called_once_with(splunk_host)
