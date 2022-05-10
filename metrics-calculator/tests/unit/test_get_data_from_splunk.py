@@ -68,7 +68,7 @@ def test_get_baseline_telemetry_from_splunk_makes_correct_request(splunk_request
     expected_request_body = urllib.parse.urlencode({
         "output_mode": "csv",
         "earliest_time": "2021-04-06T00:00:00",
-        "latest_time": "2021-06-28T00:00:00",
+        "latest_time": "2021-06-28T24:00:00",
         "search": f"""search index="spine2vfmmonitor" messageSender={asid}
 | bucket span=1d _time
 | eval day_of_week = strftime(_time,"%A")
@@ -111,7 +111,7 @@ def test_get_telemetry_from_splunk_makes_correct_request(splunk_request):
     expected_request_body = urllib.parse.urlencode({
         "output_mode": "csv",
         "earliest_time": "2021-04-06T00:00:00",
-        "latest_time": "2021-06-28T00:00:00",
+        "latest_time": "2021-06-28T24:00:00",
         "search": f"""search index="spine2vfmmonitor" messageSender={asid}
 | timechart span=1d count
 | fillnull

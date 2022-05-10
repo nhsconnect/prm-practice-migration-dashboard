@@ -46,8 +46,8 @@ def make_splunk_request(splunk_host, token, date_range, search_text):
     connection.connect()
     request_body = urllib.parse.urlencode({
         "output_mode": "csv",
-        "earliest_time": date_range["start_date"].strftime("%Y-%m-%dT%H:%M:%S"),
-        "latest_time": date_range["end_date"].strftime("%Y-%m-%dT%H:%M:%S"),
+        "earliest_time": date_range["start_date"].strftime("%Y-%m-%dT00:00:00"),
+        "latest_time": date_range["end_date"].strftime("%Y-%m-%dT24:00:00"),
         "search": search_text
     })
     headers = {"Authorization": f"Bearer {token}"}
