@@ -11,7 +11,7 @@ from chalicelib.get_splunk_api_token import get_splunk_api_token
 from chalicelib.lookup_asids import AsidLookupError, lookup_asids
 from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
 from chalicelib.migration_occurrences import get_migration_occurrences
-from chalicelib.s3 import get_s3_resource, write_object_s3
+from chalicelib.s3 import get_s3_resource, write_object_s3, objects_exist
 from chalicelib.telemetry import get_telemetry, upload_telemetry
 from chalicelib.calculate_date_range import calculate_baseline_date_range, calculate_pre_cutover_date_range, calculate_post_cutover_date_range
 
@@ -87,6 +87,11 @@ def export_splunk_data(event, context):
             s3, asid_lookup_bucket_name, migration)
         old_asid = asid_lookup["old"]["asid"]
         new_asid = asid_lookup["new"]["asid"]
+        pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
+        post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
+
+        if objects_exist(s3, telemetry_bucket_name, [pre_cutover_telemetry_filename, post_cutover_telemetry_filename]):
+            continue
 
         baseline_date_range = calculate_baseline_date_range(
             migration["date"])
@@ -113,8 +118,6 @@ def export_splunk_data(event, context):
             baseline_threshold
         )
 
-        pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
-        post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
         upload_telemetry(
             s3,
             telemetry_bucket_name,

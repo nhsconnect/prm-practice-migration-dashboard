@@ -32,3 +32,11 @@ def write_object_s3(client, object_uri: str, body):
 def get_s3_resource():
     s3 = boto3.resource("s3", region_name="eu-west-2")
     return s3
+
+
+def objects_exist(s3, bucket_name, filenames):
+    bucket = s3.Bucket(bucket_name)
+    object = bucket.objects.filter(filenames[0])
+    if len(object) == 0:
+        return False
+    return True

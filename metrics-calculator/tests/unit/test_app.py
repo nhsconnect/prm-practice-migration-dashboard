@@ -59,6 +59,13 @@ def occurrences_mock(monkeypatch):
 
 
 @pytest.fixture
+def objects_exist_mock(monkeypatch):
+    mock = Mock(return_value=False)
+    monkeypatch.setattr("app.objects_exist", mock)
+    yield mock
+
+
+@pytest.fixture
 def calculate_baseline_date_range_mock(monkeypatch):
     mock = Mock(
         return_value={"start_date": date.today(), "end_date": date.today()})
@@ -145,7 +152,8 @@ def mock_defaults(
         get_baseline_threshold_from_splunk_data_mock,
         get_splunk_api_token_mock,
         get_telemetry_from_splunk_mock,
-        upload_telemetry_mock):
+        upload_telemetry_mock,
+        files_exist_mock):
     pass
 
 
@@ -434,6 +442,47 @@ def test_export_splunk_data_gets_splunk_api_token_once_regardless_of_number_of_m
     export_splunk_data({}, {})
 
     get_splunk_api_token_mock.assert_called_once()
+
+
+def test_export_splunk_data_checks_for_existing_telemetry_files(
+        mock_defaults,
+        occurrences_mock,
+        objects_exist_mock,
+        lookup_asids_mock,
+        exporter_lambda_env_vars):
+    migration_occurrence = aMigrationOccurrence()
+    occurrences_mock.return_value = [migration_occurrence]
+    old_asid = "12345"
+    new_asid = "09876"
+    lookup_asids_mock.return_value = {
+        "old": {"asid": old_asid, "name": ""},
+        "new": {"asid": new_asid, "name": ""}
+    }
+    pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
+    post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
+
+    export_splunk_data({}, {})
+
+    objects_exist_mock.assert_called_once_with(
+        ANY,
+        exporter_lambda_env_vars['TELEMETRY_BUCKET_NAME'],
+        [pre_cutover_telemetry_filename, post_cutover_telemetry_filename])
+
+
+def test_export_splunk_data_does_not_export_duplicate_telemetry_data(
+        mock_defaults,
+        occurrences_mock,
+        objects_exist_mock,
+        get_baseline_threshold_from_splunk_data_mock,
+        get_telemetry_from_splunk_mock):
+    migration_occurrence = aMigrationOccurrence()
+    occurrences_mock.return_value = [migration_occurrence]
+    objects_exist_mock.return_value = True
+
+    export_splunk_data({}, {})
+
+    get_baseline_threshold_from_splunk_data_mock.assert_not_called()
+    get_telemetry_from_splunk_mock.assert_not_called()
 
 
 def test_export_splunk_data_queries_splunk_for_baseline_threshold(
