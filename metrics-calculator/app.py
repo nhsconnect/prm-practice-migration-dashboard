@@ -16,7 +16,8 @@ from chalicelib.telemetry import get_telemetry, upload_telemetry
 from chalicelib.calculate_date_range import calculate_baseline_date_range, calculate_pre_cutover_date_range, calculate_post_cutover_date_range
 
 app = Chalice(app_name='metrics-calculator')
-
+logger = logging.getLogger("Metrics Calculator")
+logger.setLevel(logging.DEBUG)
 
 @app.lambda_function()
 def calculate_dashboard_metrics_from_telemetry(event, context):
@@ -83,20 +84,27 @@ def export_splunk_data(event, context):
         ssm = get_ssm_client()
         splunk_token = get_splunk_api_token(ssm, "/prod/splunk-api-token")
     for migration in known_migrations:
+        logger.debug(f"ODS code: {migration['ods_code']}")
         asid_lookup = lookup_asids(
             s3, asid_lookup_bucket_name, migration)
         old_asid = asid_lookup["old"]["asid"]
+        logger.debug(f"Old asid: {old_asid}")
         new_asid = asid_lookup["new"]["asid"]
+        logger.debug(f"New asid: {new_asid}")
 
         baseline_date_range = calculate_baseline_date_range(
             migration["date"])
+        logger.debug(f"Baseline date range: start date: {baseline_date_range['start_date']}, end date: {baseline_date_range['end_date']}")
         pre_cutover_date_range = calculate_pre_cutover_date_range(
             migration["date"])
+        logger.debug(f"Pre-cutover date range: start date: {pre_cutover_date_range['start_date']}, end date: {pre_cutover_date_range['end_date']}")
         post_cutover_date_range = calculate_post_cutover_date_range(
             migration["date"])
+        logger.debug(f"Post-cutover date range: start date: {post_cutover_date_range['start_date']}, end date: {post_cutover_date_range['end_date']}")
 
         baseline_threshold = get_baseline_threshold_from_splunk_data(
             splunk_host, splunk_token, old_asid, baseline_date_range)
+        logger.debug(f"Baseline threshold value: {baseline_threshold}")
 
         pre_cutover_telemetry = get_telemetry_from_splunk(
             splunk_host,
