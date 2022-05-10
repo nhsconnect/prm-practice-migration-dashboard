@@ -11,14 +11,6 @@ class SplunkParseError(Exception):
     pass
 
 
-def get_baseline_threshold_from_splunk_data(
-        splunk_host, token, asid, baseline_date_range):
-    telemetry = make_request_for_baseline_telemetry(
-        splunk_host, token, asid, baseline_date_range)
-    threshold = parse_threshold_from_telemetry(telemetry)
-    return threshold
-
-
 def get_telemetry_from_splunk(splunk_host, token, asid, date_range, baseline_threshold):
     search_text = f"""search index="spine2vfmmonitor" messageSender={asid}
 | timechart span=1d count
@@ -33,7 +25,7 @@ def get_telemetry_from_splunk(splunk_host, token, asid, date_range, baseline_thr
     return telemetry
 
 
-def make_request_for_baseline_telemetry(splunk_host, token, asid, baseline_date_range):
+def get_baseline_telemetry_from_splunk(splunk_host, token, asid, baseline_date_range):
     search_text = f"""search index="spine2vfmmonitor" messageSender={asid}
 | bucket span=1d _time
 | eval day_of_week = strftime(_time,"%A")

@@ -90,11 +90,18 @@ def get_splunk_api_token_mock(monkeypatch):
 
 
 @pytest.fixture
-def get_baseline_threshold_from_splunk_data_mock(monkeypatch):
+def parse_threshold_from_telemetry_mock(monkeypatch):
+    mock = Mock(return_value="101")
+    monkeypatch.setattr("app.parse_threshold_from_telemetry", mock)
+    yield mock
+
+
+@pytest.fixture
+def get_baseline_telemetry_from_splunk_mock(monkeypatch):
     mock = Mock(
-        return_value="101")
-    monkeypatch.setattr(
-        "app.get_baseline_threshold_from_splunk_data", mock)
+        return_value="""_time",count,avgmin2std
+"2021-09-06T00:00:00.000+0000",1500,"4537.33933970307""")
+    monkeypatch.setattr("app.get_baseline_telemetry_from_splunk", mock)
     yield mock
 
 
@@ -142,10 +149,11 @@ def mock_defaults(
         telemetry_mock,
         occurrences_mock,
         lookup_asids_mock,
-        get_baseline_threshold_from_splunk_data_mock,
+        parse_threshold_from_telemetry_mock,
         get_splunk_api_token_mock,
         get_telemetry_from_splunk_mock,
-        upload_telemetry_mock):
+        upload_telemetry_mock,
+        get_baseline_telemetry_from_splunk_mock):
     pass
 
 
@@ -436,14 +444,14 @@ def test_export_splunk_data_gets_splunk_api_token_once_regardless_of_number_of_m
     get_splunk_api_token_mock.assert_called_once()
 
 
-def test_export_splunk_data_queries_splunk_for_baseline_threshold(
+def test_export_splunk_data_queries_splunk_for_baseline_telemetry(
         mock_defaults,
         occurrences_mock,
         calculate_baseline_date_range_mock,
         lookup_asids_mock,
         exporter_lambda_env_vars,
         get_splunk_api_token_mock,
-        get_baseline_threshold_from_splunk_data_mock):
+        get_baseline_telemetry_from_splunk_mock):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     old_asid = "12345"
@@ -454,11 +462,25 @@ def test_export_splunk_data_queries_splunk_for_baseline_threshold(
 
     export_splunk_data({}, {})
 
-    get_baseline_threshold_from_splunk_data_mock.assert_called_once_with(
+    get_baseline_telemetry_from_splunk_mock.assert_called_once_with(
         exporter_lambda_env_vars["SPLUNK_HOST"],
         get_splunk_api_token_mock.return_value,
         old_asid,
         calculate_baseline_date_range_mock.return_value)
+
+
+def test_export_splunk_data_parses_baseline_threshold_from_telemetry(
+        mock_defaults,
+        occurrences_mock,
+        parse_threshold_from_telemetry_mock,
+        get_baseline_telemetry_from_splunk_mock):
+    migration_occurrence = aMigrationOccurrence()
+    occurrences_mock.return_value = [migration_occurrence]
+
+    export_splunk_data({}, {})
+
+    expected_telemetry = get_baseline_telemetry_from_splunk_mock.return_value
+    parse_threshold_from_telemetry_mock.assert_called_once_with(expected_telemetry)
 
 
 def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
@@ -469,7 +491,7 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         lookup_asids_mock,
         exporter_lambda_env_vars,
         get_splunk_api_token_mock,
-        get_baseline_threshold_from_splunk_data_mock,
+        parse_threshold_from_telemetry_mock,
         get_telemetry_from_splunk_mock):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
@@ -480,7 +502,7 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         "new": {"asid": new_asid, "name": ""}
     }
     baseline_threshold = "10"
-    get_baseline_threshold_from_splunk_data_mock.return_value = baseline_threshold
+    parse_threshold_from_telemetry_mock.return_value = baseline_threshold
 
     export_splunk_data({}, {})
 

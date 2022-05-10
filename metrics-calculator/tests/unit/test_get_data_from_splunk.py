@@ -2,10 +2,10 @@ import pytest as pytest
 import urllib.parse
 
 from datetime import date
-from unittest.mock import Mock, MagicMock, ANY
+from unittest.mock import Mock, MagicMock
 
-from chalicelib.get_data_from_splunk import get_baseline_threshold_from_splunk_data, SplunkQueryError, SplunkParseError, \
-    get_telemetry_from_splunk
+from chalicelib.get_data_from_splunk import SplunkQueryError, SplunkParseError, \
+    get_telemetry_from_splunk, parse_threshold_from_telemetry, get_baseline_telemetry_from_splunk, make_splunk_request
 
 
 @pytest.fixture(scope="function")
@@ -32,49 +32,37 @@ def splunk_request(monkeypatch):
     }
 
 
-def test_get_baseline_threshold_from_splunk_data_extracts_threshold_from_splunk_telemetry(splunk_response):
-    splunk_response.return_value = Mock(read=lambda: b"""_time",count,avgmin2std
-"2021-09-06T00:00:00.000+0000",2,"4537.33933970307""", status=200)
+def test_parse_threshold_from_telemetry_extracts_threshold_from_splunk_telemetry():
+    telemetry = b"""_time",count,avgmin2std
+"2021-09-06T00:00:00.000+0000",2,"4537.33933970307"""
 
-    baseline_threshold = get_baseline_threshold_from_splunk_data(
-        "", anApiToken(), anAsid(), aDateRange())
+    baseline_threshold = parse_threshold_from_telemetry(telemetry)
 
     assert baseline_threshold == "4537.33933970307"
 
 
-def test_get_baseline_threshold_from_splunk_data_handles_no_results(splunk_response):
-    splunk_response.return_value = Mock(read=lambda: b"""_time",count,avgmin2std
-"2021-09-06T00:00:00.000+0000",0,""0""", status=200)
+def test_parse_threshold_from_telemetry_handles_no_results():
+    telemetry = b"""_time",count,avgmin2std
+"2021-09-06T00:00:00.000+0000",2,"0"""
 
     with pytest.raises(ValueError, match="Threshold is not a positive value"):
-        get_baseline_threshold_from_splunk_data(
-            "", anApiToken(), anAsid(), aDateRange())
+        parse_threshold_from_telemetry(telemetry)
 
 
-def test_get_baseline_threshold_from_splunk_data_handles_http_response_failure(splunk_response):
-    splunk_response.return_value = Mock(status=404)
-
-    with pytest.raises(SplunkQueryError, match="Splunk request returned a 404 code"):
-        get_baseline_threshold_from_splunk_data(
-            "", anApiToken(), anAsid(), aDateRange())
-
-
-def test_get_baseline_threshold_from_splunk_data_handles_parse_failure(splunk_response):
-    splunk_response.return_value = Mock(
-        read=lambda: "this-is-not-a-byte-string", status=200)
+def test_parse_threshold_from_telemetry_handles_parse_failure():
+    telemetry = "this-is-not-a-byte-string"
 
     with pytest.raises(SplunkParseError):
-        get_baseline_threshold_from_splunk_data(
-            "", anApiToken(), anAsid(), aDateRange())
+        parse_threshold_from_telemetry(telemetry)
 
 
-def test_get_baseline_threshold_from_splunk_data_makes_correct_request(splunk_request):
+def test_get_baseline_telemetry_from_splunk_makes_correct_request(splunk_request):
     asid = anAsid()
     baseline_date_range = aDateRange()
     splunk_host = "test-splunk"
     token = anApiToken()
 
-    get_baseline_threshold_from_splunk_data(
+    get_baseline_telemetry_from_splunk(
         splunk_host, token, asid, baseline_date_range)
 
     expected_request_body = urllib.parse.urlencode({
@@ -111,16 +99,6 @@ def test_get_telemetry_from_splunk_get_cutover_telemetry(splunk_response):
     assert telemetry == expected_telemetry
 
 
-def test_get_telemetry_from_splunk_handles_http_response_failure(splunk_response):
-    threshold = "4537.33933970307"
-
-    splunk_response.return_value = Mock(status=404)
-
-    with pytest.raises(SplunkQueryError, match="Splunk request returned a 404 code"):
-        get_telemetry_from_splunk(
-            "", anApiToken(), anAsid(), aDateRange(), threshold)
-
-
 def test_get_telemetry_from_splunk_makes_correct_request(splunk_request):
     asid = anAsid()
     date_range = aDateRange()
@@ -147,6 +125,13 @@ def test_get_telemetry_from_splunk_makes_correct_request(splunk_request):
     splunk_request["connection"].assert_called_once_with(splunk_host)
     splunk_request["request"].assert_called_once_with(
         "POST", "/services/search/jobs/export", expected_request_body, expected_headers)
+
+
+def test_make_splunk_request_handles_http_response_failure(splunk_response):
+    splunk_response.return_value = Mock(status=404)
+
+    with pytest.raises(SplunkQueryError, match="Splunk request returned a 404 code"):
+        make_splunk_request("", anApiToken(), aDateRange(), "")
 
 
 def anAsid():

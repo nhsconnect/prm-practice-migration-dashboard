@@ -6,7 +6,8 @@ from decimal import ROUND_HALF_UP, Decimal
 from chalice import Chalice
 from statistics import fmean
 
-from chalicelib.get_data_from_splunk import get_baseline_threshold_from_splunk_data, get_telemetry_from_splunk
+from chalicelib.get_data_from_splunk import get_telemetry_from_splunk, get_baseline_telemetry_from_splunk, \
+    parse_threshold_from_telemetry
 from chalicelib.get_splunk_api_token import get_splunk_api_token
 from chalicelib.lookup_asids import AsidLookupError, lookup_asids
 from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
@@ -102,8 +103,9 @@ def export_splunk_data(event, context):
             migration["date"])
         logger.debug(f"Post-cutover date range: start date: {post_cutover_date_range['start_date']}, end date: {post_cutover_date_range['end_date']}")
 
-        baseline_threshold = get_baseline_threshold_from_splunk_data(
+        baseline_telemetry = get_baseline_telemetry_from_splunk(
             splunk_host, splunk_token, old_asid, baseline_date_range)
+        baseline_threshold = parse_threshold_from_telemetry(baseline_telemetry)
         logger.debug(f"Baseline threshold value: {baseline_threshold}")
 
         pre_cutover_telemetry = get_telemetry_from_splunk(
