@@ -118,8 +118,8 @@ def get_telemetry_from_splunk_mock(monkeypatch):
 def lookup_asids_mock(monkeypatch):
     mock = Mock()
     mock.return_value = {
-        "old": {"asid": "", "name": ""},
-        "new": {"asid": "", "name": ""}
+        "old": {"asid": "12345", "name": ""},
+        "new": {"asid": "09876", "name": ""}
     }
     monkeypatch.setattr("app.lookup_asids", mock)
     yield mock
@@ -520,7 +520,28 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         baseline_threshold)
 
 
-def test_export_splunk_data_uploads_telemetry_to_s3(
+def test_export_splunk_data_uploads_baseline_telemetry_to_s3(
+        mock_defaults,
+        occurrences_mock,
+        upload_telemetry_mock,
+        lookup_asids_mock,
+        exporter_lambda_env_vars,
+        get_baseline_telemetry_from_splunk_mock):
+    migration_occurrence = aMigrationOccurrence()
+    occurrences_mock.return_value = [migration_occurrence]
+    old_asid = lookup_asids_mock.return_value["old"]["asid"]
+
+    export_splunk_data({}, {})
+
+    upload_telemetry_mock.assert_any_call(
+        ANY,
+        exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"],
+        get_baseline_telemetry_from_splunk_mock.return_value,
+        f"{old_asid}-baseline-telemetry.csv.gz"
+    )
+
+
+def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
         mock_defaults,
         occurrences_mock,
         upload_telemetry_mock,

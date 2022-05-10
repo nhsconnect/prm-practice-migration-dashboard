@@ -123,8 +123,14 @@ def export_splunk_data(event, context):
             baseline_threshold
         )
 
+        baseline_telemetry_filename = f"{old_asid}-baseline-telemetry.csv.gz"
         pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
         post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
+        upload_telemetry(
+            s3,
+            telemetry_bucket_name,
+            baseline_telemetry,
+            baseline_telemetry_filename)
         upload_telemetry(
             s3,
             telemetry_bucket_name,
