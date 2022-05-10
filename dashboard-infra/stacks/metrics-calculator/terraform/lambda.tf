@@ -192,6 +192,12 @@ resource "aws_iam_policy" "splunk_data_exporter_function_policy" {
       "Effect": "Allow",
       "Action": "s3:PutObject",
       "Resource": "arn:aws:s3:::${var.telemetry_bucket_name}/*"
+    },
+    {
+      "Sid": "AllowReadTelemetryBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::${var.telemetry_bucket_name}"
     }
   ]
 }

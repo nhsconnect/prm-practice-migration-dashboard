@@ -4,8 +4,7 @@ from moto import mock_s3
 import pytest
 import os
 
-from chalicelib.s3 import read_object_s3
-from chalicelib.s3 import write_object_s3
+from chalicelib.s3 import read_object_s3, write_object_s3, objects_exist
 from tests.builders.file import build_gzip_csv
 
 
@@ -57,3 +56,44 @@ def test_write_object_s3_writes_object_content(s3):
 
     s3_object_response = s3.Object("test_bucket", "test_object.json").get()
     assert s3_object_response["Body"].read() == json_string
+
+
+@mock_s3
+def test_objects_exist_returns_true_when_all_objects_exist(s3):
+    s3.create_bucket(Bucket="test_bucket")
+
+    object_one = "object-one"
+    object_two = "object-two"
+
+    write_object_s3(s3, f"s3://test_bucket/{object_one}", 'object-one-content')
+    write_object_s3(s3, f"s3://test_bucket/{object_two}", 'object-two-content')
+
+    result = objects_exist(s3, "test_bucket", [object_one, object_two])
+
+    assert result
+
+
+@mock_s3
+def test_objects_exist_returns_false_when_only_one_object_exists(s3):
+    s3.create_bucket(Bucket="test_bucket")
+
+    object_one = "object-one"
+    object_two = "object-two"
+
+    write_object_s3(s3, f"s3://test_bucket/{object_one}", 'object-one-content')
+
+    result = objects_exist(s3, "test_bucket", [object_one, object_two])
+
+    assert not result
+
+
+@mock_s3
+def test_objects_exist_returns_false_when_no_objects_exist(s3):
+    s3.create_bucket(Bucket="test_bucket")
+
+    object_one = "object-one"
+    object_two = "object-two"
+
+    result = objects_exist(s3, "test_bucket", [object_one, object_two])
+
+    assert not result
