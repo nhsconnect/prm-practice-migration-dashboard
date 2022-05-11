@@ -27,7 +27,7 @@ resource "aws_lambda_function" "splunk_data_exporter_function" {
   function_name = var.splunk_data_exporter_function_name
   role          = aws_iam_role.splunk_data_exporter_function_role.arn
   handler       = var.splunk_data_exporter_handler_name
-  timeout       = 120
+  timeout       = 900
   runtime       = "python3.9"
 
   vpc_config {
