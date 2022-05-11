@@ -85,72 +85,80 @@ def export_splunk_data(event, context):
     if len(known_migrations) > 0:
         ssm = get_ssm_client()
         splunk_token = get_splunk_api_token(ssm, "/prod/splunk-api-token")
-    for migration in known_migrations:
-        logger.debug(f"ODS code: {migration['ods_code']}")
-        asid_lookup = lookup_asids(
-            s3, asid_lookup_bucket_name, migration)
-        old_asid = asid_lookup["old"]["asid"]
-        logger.debug(f"Old asid: {old_asid}")
-        new_asid = asid_lookup["new"]["asid"]
-        logger.debug(f"New asid: {new_asid}")
-        baseline_telemetry_filename = f"{old_asid}-baseline-telemetry.csv.gz"
-        pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
-        post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
-
-        if objects_exist(s3, telemetry_bucket_name, [baseline_telemetry_filename, pre_cutover_telemetry_filename, post_cutover_telemetry_filename]):
-            logger.debug("Existing files present in bucket - skipping further processing")
-            continue
-
-        logger.debug("Querying splunk for telemetry data")
-        baseline_date_range = calculate_baseline_date_range(
-            migration["date"])
-        logger.debug(f"Baseline date range: start date: {baseline_date_range['start_date']}, end date: {baseline_date_range['end_date']}")
-        pre_cutover_date_range = calculate_pre_cutover_date_range(
-            migration["date"])
-        logger.debug(f"Pre-cutover date range: start date: {pre_cutover_date_range['start_date']}, end date: {pre_cutover_date_range['end_date']}")
-        post_cutover_date_range = calculate_post_cutover_date_range(
-            migration["date"])
-        logger.debug(f"Post-cutover date range: start date: {post_cutover_date_range['start_date']}, end date: {post_cutover_date_range['end_date']}")
-
-        baseline_telemetry = get_baseline_telemetry_from_splunk(
-            splunk_host, splunk_token, old_asid, baseline_date_range)
-        baseline_threshold = parse_threshold_from_telemetry(baseline_telemetry)
-        logger.debug(f"Baseline threshold value: {baseline_threshold}")
-
-        pre_cutover_telemetry = get_telemetry_from_splunk(
-            splunk_host,
-            splunk_token,
-            old_asid,
-            pre_cutover_date_range,
-            baseline_threshold
-        )
-        post_cutover_telemetry = get_telemetry_from_splunk(
-            splunk_host,
-            splunk_token,
-            new_asid,
-            post_cutover_date_range,
-            baseline_threshold
-        )
-
-        logger.debug("Uploading exported splunk data")
-        upload_telemetry(
-            s3,
-            telemetry_bucket_name,
-            baseline_telemetry,
-            baseline_telemetry_filename)
-        upload_telemetry(
-            s3,
-            telemetry_bucket_name,
-            pre_cutover_telemetry,
-            pre_cutover_telemetry_filename)
-        upload_telemetry(
-            s3,
-            telemetry_bucket_name,
-            post_cutover_telemetry,
-            post_cutover_telemetry_filename)
-        logger.debug("Files successfully uploaded")
-
+        for migration in known_migrations:
+            export_data_for_migration(
+                migration, s3, asid_lookup_bucket_name, telemetry_bucket_name, splunk_token, splunk_host)
     return "ok"
+
+
+def export_data_for_migration(migration, s3, asid_lookup_bucket_name, telemetry_bucket_name, splunk_token, splunk_host):
+    logger.debug(f"ODS code: {migration['ods_code']}")
+    asid_lookup = lookup_asids(s3, asid_lookup_bucket_name, migration)
+    old_asid = asid_lookup["old"]["asid"]
+    logger.debug(f"Old asid: {old_asid}")
+    new_asid = asid_lookup["new"]["asid"]
+    logger.debug(f"New asid: {new_asid}")
+
+    baseline_telemetry_filename = f"{old_asid}-baseline-telemetry.csv.gz"
+    pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
+    post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
+
+    telemetry_filenames = [baseline_telemetry_filename, pre_cutover_telemetry_filename, post_cutover_telemetry_filename]
+    if objects_exist(s3, telemetry_bucket_name, telemetry_filenames):
+        logger.debug("Existing files present in bucket - skipping further processing")
+        return
+
+    logger.debug("Querying splunk for telemetry data")
+    baseline_date_range = calculate_baseline_date_range(
+        migration["date"])
+    logger.debug(
+        f"Baseline date range: start date: {baseline_date_range['start_date']}, end date: {baseline_date_range['end_date']}")
+    pre_cutover_date_range = calculate_pre_cutover_date_range(
+        migration["date"])
+    logger.debug(
+        f"Pre-cutover date range: start date: {pre_cutover_date_range['start_date']}, end date: {pre_cutover_date_range['end_date']}")
+    post_cutover_date_range = calculate_post_cutover_date_range(
+        migration["date"])
+    logger.debug(
+        f"Post-cutover date range: start date: {post_cutover_date_range['start_date']}, end date: {post_cutover_date_range['end_date']}")
+
+    baseline_telemetry = get_baseline_telemetry_from_splunk(
+        splunk_host, splunk_token, old_asid, baseline_date_range)
+    baseline_threshold = parse_threshold_from_telemetry(baseline_telemetry)
+    logger.debug(f"Baseline threshold value: {baseline_threshold}")
+
+    pre_cutover_telemetry = get_telemetry_from_splunk(
+        splunk_host,
+        splunk_token,
+        old_asid,
+        pre_cutover_date_range,
+        baseline_threshold
+    )
+    post_cutover_telemetry = get_telemetry_from_splunk(
+        splunk_host,
+        splunk_token,
+        new_asid,
+        post_cutover_date_range,
+        baseline_threshold
+    )
+
+    logger.debug("Uploading exported splunk data")
+    upload_telemetry(
+        s3,
+        telemetry_bucket_name,
+        baseline_telemetry,
+        baseline_telemetry_filename)
+    upload_telemetry(
+        s3,
+        telemetry_bucket_name,
+        pre_cutover_telemetry,
+        pre_cutover_telemetry_filename)
+    upload_telemetry(
+        s3,
+        telemetry_bucket_name,
+        post_cutover_telemetry,
+        post_cutover_telemetry_filename)
+    logger.debug("Files successfully uploaded")
 
 
 def get_ssm_client():
