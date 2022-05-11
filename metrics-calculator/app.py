@@ -98,8 +98,10 @@ def export_splunk_data(event, context):
         post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
 
         if objects_exist(s3, telemetry_bucket_name, [baseline_telemetry_filename, pre_cutover_telemetry_filename, post_cutover_telemetry_filename]):
+            logger.debug("Existing files present in bucket - skipping further processing")
             continue
 
+        logger.debug("Querying splunk for telemetry data")
         baseline_date_range = calculate_baseline_date_range(
             migration["date"])
         logger.debug(f"Baseline date range: start date: {baseline_date_range['start_date']}, end date: {baseline_date_range['end_date']}")
@@ -130,6 +132,7 @@ def export_splunk_data(event, context):
             baseline_threshold
         )
 
+        logger.debug("Uploading exported splunk data")
         upload_telemetry(
             s3,
             telemetry_bucket_name,
@@ -145,6 +148,7 @@ def export_splunk_data(event, context):
             telemetry_bucket_name,
             post_cutover_telemetry,
             post_cutover_telemetry_filename)
+        logger.debug("Files successfully uploaded")
 
     return "ok"
 
