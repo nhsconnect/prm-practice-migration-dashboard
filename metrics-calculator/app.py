@@ -86,8 +86,11 @@ def export_splunk_data(event, context):
         ssm = get_ssm_client()
         splunk_token = get_splunk_api_token(ssm, "/prod/splunk-api-token")
         for migration in known_migrations:
-            export_data_for_migration(
-                migration, s3, asid_lookup_bucket_name, telemetry_bucket_name, splunk_token, splunk_host)
+            try:
+                export_data_for_migration(
+                    migration, s3, asid_lookup_bucket_name, telemetry_bucket_name, splunk_token, splunk_host)
+            except AsidLookupError:
+                logger.error("Error finding ASIDs", exc_info=True)
     return "ok"
 
 

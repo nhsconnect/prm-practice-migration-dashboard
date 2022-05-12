@@ -374,6 +374,33 @@ def test_export_splunk_data_gets_asids_for_ods_code_in_occurrences_data(
     )
 
 
+def test_export_splunk_data_skips_migrations_with_missing_asids(
+        mock_defaults,
+        occurrences_mock,
+        lookup_asids_mock):
+    migration_occurrence_1 = aMigrationOccurrence()
+    migration_occurrence_2 = {
+        "ods_code": "B22222",
+        "ccg_name": "",
+        "practice_name": "",
+        "date": date(2021, 7, 11)
+    }
+    occurrences_mock.return_value = [migration_occurrence_1, migration_occurrence_2]
+
+    def fail_on_first_lookup(s3, bucket_name, migration):
+        if migration == migration_occurrence_1:
+            raise AsidLookupError("Error!")
+        return {
+            "old": {"asid": "", "name": ""},
+            "new": {"asid": "", "name": ""}
+        }
+    lookup_asids_mock.side_effect = fail_on_first_lookup
+
+    export_splunk_data({}, {})
+
+    lookup_asids_mock.assert_called_with(ANY, ANY, migration_occurrence_2)
+
+
 def test_export_splunk_data_gets_baseline_date_range(
         mock_defaults,
         occurrences_mock,
