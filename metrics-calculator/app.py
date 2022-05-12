@@ -81,6 +81,7 @@ def export_splunk_data(event, context):
     s3 = get_s3_resource()
     known_migrations = get_migration_occurrences(
         s3, occurrences_bucket_name)
+    number_of_successful_exports = 0
 
     if len(known_migrations) > 0:
         ssm = get_ssm_client()
@@ -89,8 +90,11 @@ def export_splunk_data(event, context):
             try:
                 export_data_for_migration(
                     migration, s3, asid_lookup_bucket_name, telemetry_bucket_name, splunk_token, splunk_host)
+                number_of_successful_exports += 1
             except AsidLookupError:
                 logger.error("Error finding ASIDs", exc_info=True)
+    logger.info(
+        f"Processed {len(known_migrations)} migrations, {number_of_successful_exports} exported successfully")
     return "ok"
 
 
