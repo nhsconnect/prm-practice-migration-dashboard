@@ -11,6 +11,10 @@ class SplunkParseError(Exception):
     pass
 
 
+class SplunkTelemetryMissing(Exception):
+    pass
+
+
 def get_telemetry_from_splunk(splunk_host, token, asid, date_range, baseline_threshold):
     search_text = f"""search index="spine2vfmmonitor" messageSender={asid}
 | timechart span=1d count
@@ -62,13 +66,28 @@ def make_splunk_request(splunk_host, token, date_range, search_text):
 
 
 def parse_threshold_from_telemetry(telemetry):
-    try:
-        lines = telemetry.decode().splitlines()
-        csv_reader = csv.DictReader(lines)
-        first_row = next(csv_reader)
-        threshold = first_row["avgmin2std"]
-    except Exception as exception:
-        raise SplunkParseError from exception
+    lines = convert_to_lines(telemetry)
+    if len(lines) == 0 or len(lines) == 1:
+        raise SplunkTelemetryMissing
+    threshold = extract_threshold(lines)
     if float(threshold) <= 0:
         raise ValueError("Threshold is not a positive value")
     return threshold
+
+
+def extract_threshold(lines):
+    try:
+        csv_reader = csv.DictReader(lines)
+        first_row = next(csv_reader)
+        threshold = first_row["avgmin2std"]
+        return threshold
+    except Exception as exception:
+        raise SplunkParseError from exception
+
+
+def convert_to_lines(telemetry):
+    try:
+        lines = telemetry.decode().splitlines()
+        return lines
+    except (UnicodeError, AttributeError) as exception:
+        raise SplunkParseError from exception

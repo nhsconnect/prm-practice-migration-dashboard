@@ -5,7 +5,8 @@ from datetime import date
 from unittest.mock import Mock, MagicMock
 
 from chalicelib.get_data_from_splunk import SplunkQueryError, SplunkParseError, \
-    get_telemetry_from_splunk, parse_threshold_from_telemetry, get_baseline_telemetry_from_splunk, make_splunk_request
+    get_telemetry_from_splunk, parse_threshold_from_telemetry, get_baseline_telemetry_from_splunk, make_splunk_request, \
+    SplunkTelemetryMissing
 
 
 @pytest.fixture(scope="function")
@@ -41,7 +42,7 @@ def test_parse_threshold_from_telemetry_extracts_threshold_from_splunk_telemetry
     assert baseline_threshold == "4537.33933970307"
 
 
-def test_parse_threshold_from_telemetry_handles_no_results():
+def test_parse_threshold_from_telemetry_raises_exception_when_threshold_is_not_positive():
     telemetry = b"""_time",count,avgmin2std
 "2021-09-06T00:00:00.000+0000",2,"0"""
 
@@ -51,6 +52,27 @@ def test_parse_threshold_from_telemetry_handles_no_results():
 
 def test_parse_threshold_from_telemetry_handles_parse_failure():
     telemetry = "this-is-not-a-byte-string"
+
+    with pytest.raises(SplunkParseError):
+        parse_threshold_from_telemetry(telemetry)
+
+
+def test_parse_threshold_from_telemetry_raises_exception_when_no_telemetry_is_returned():
+    telemetry = b""
+
+    with pytest.raises(SplunkTelemetryMissing):
+        parse_threshold_from_telemetry(telemetry)
+
+
+def test_parse_threshold_from_telemetry_raises_exception_when_only_telemetry_headings_are_returned():
+    telemetry = b"""_time",count,avgmin2std"""
+
+    with pytest.raises(SplunkTelemetryMissing):
+        parse_threshold_from_telemetry(telemetry)
+
+
+def test_parse_threshold_from_telemetry_raises_exception_when_there_is_an_error_decoding_splunk_response():
+    telemetry = bytearray.fromhex('2Ef0 F1f2  ')
 
     with pytest.raises(SplunkParseError):
         parse_threshold_from_telemetry(telemetry)
