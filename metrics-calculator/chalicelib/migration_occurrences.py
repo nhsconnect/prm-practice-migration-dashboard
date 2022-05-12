@@ -1,4 +1,4 @@
-from dateutil.parser import parse
+from datetime import datetime
 
 from chalicelib.csv_rows import csv_rows
 
@@ -35,7 +35,7 @@ def _parse_migration(row):
         "practice_name": row["Service Recipient Name"],
         "supplier_id": row["Supplier ID"],
         "product_id": row["Product ID "],
-        "date": parse(date_str)
+        "date": datetime.strptime(date_str, "%d/%m/%Y")
     }
 
     return migration

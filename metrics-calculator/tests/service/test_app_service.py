@@ -167,7 +167,7 @@ def create_occurrences_data(occurrences_bucket_name, s3, ods_code, ccg, practice
             header=["Service Recipient ID (e.g. ODS code where this is available)", "Change Status", "Call Off Ordering Party name", "Service Recipient Name", "Supplier ID", "Supplier Name", "Product Name ", "Product ID ",
                     "\"Product Type (Catalogue solution, Additional Service, Associated Service)\"", "M1 planned (Delivery Date)", "", "Actual M1 date", "Buyer verification date (M2)"],
             rows=[[ods_code, "Activation", ccg, practice, "10000",
-                   "Emis", "Emis Web GP", "10000-001", "Catalogue Solution", "", "", "11/5/21", ""]],
+                   "Emis", "Emis Web GP", "10000-001", "Catalogue Solution", "", "", "11/5/2021", ""]],
         )
     )
 

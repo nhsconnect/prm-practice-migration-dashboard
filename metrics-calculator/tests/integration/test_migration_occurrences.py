@@ -57,7 +57,7 @@ def test_returns_migration_data_for_foundation_supplier_solutions(s3, expected_s
     assert migration["practice_name"] == expected_practice
     assert migration["supplier_id"] == expected_supplier_id
     assert migration["product_id"] == expected_product_id
-    assert migration["date"] == datetime(2021, 11, 5)
+    assert migration["date"] == datetime(2021, 5, 11)
 
 
 def test_does_not_return_data_for_other_solutions(s3):
@@ -82,6 +82,6 @@ def upload_test_migration_occurrences(
             header=["Service Recipient ID (e.g. ODS code where this is available)", "Change Status", "Call Off Ordering Party name", "Service Recipient Name", "Supplier ID", "Supplier Name", "Product Name ",
                     "Product ID ", "\"Product Type (Catalogue solution, Additional Service, Associated Service)\"", "M1 planned (Delivery Date)", "", "Actual M1 date", "Buyer verification date (M2)"],
             rows=[[expected_ods_code, "Activation", expected_ccg, expected_practice, expected_supplier_id, "", "",
-                   expected_product_id, "Catalogue Solution", "", "", "11/5/21", ""]],
+                   expected_product_id, "Catalogue Solution", "", "", "11/5/2021", ""]],
         )
     )
