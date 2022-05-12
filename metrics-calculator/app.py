@@ -35,8 +35,12 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
         try:
             asid_lookup = lookup_asids(
                 s3, asid_lookup_bucket_name, migration)
-            old_telemetry_object_name = f"{asid_lookup['old']['asid']}-telemetry.csv.gz"
-            new_telemetry_object_name = f"{asid_lookup['new']['asid']}-telemetry.csv.gz"
+            old_asid = asid_lookup["old"]["asid"]
+            logger.debug(f"Old asid: {old_asid}")
+            new_asid = asid_lookup["new"]["asid"]
+            logger.debug(f"New asid: {new_asid}")
+            old_telemetry_object_name = f"{old_asid}-telemetry.csv.gz"
+            new_telemetry_object_name = f"{new_asid}-telemetry.csv.gz"
 
             old_telemetry_generator = get_telemetry(
                 s3, telemetry_bucket_name, old_telemetry_object_name)

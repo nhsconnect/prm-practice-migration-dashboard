@@ -19,11 +19,17 @@ def calculate_cutover_start_and_end_date(stats_preceding_cutover, stats_followin
 
     threshold = calculate_threshold(stats_preceding_cutover_list)
 
-    cutover_start_date = find_date_of_entry_above_threshold(
-        reversed_stats_preceding_cutover, threshold, -1)
+    try:
+        cutover_start_date = find_date_of_entry_above_threshold(
+            reversed_stats_preceding_cutover, threshold, -1)
+    except Exception as exception:
+        raise Exception("Start date out of range") from exception
 
-    cutover_end_date = find_date_of_entry_above_threshold(
-        stats_following_cutover_list, threshold)
+    try:
+        cutover_end_date = find_date_of_entry_above_threshold(
+            stats_following_cutover_list, threshold)
+    except Exception as exception:
+        raise Exception("End date out of range") from exception
 
     cutover_duration = cutover_end_date - cutover_start_date
     return {
