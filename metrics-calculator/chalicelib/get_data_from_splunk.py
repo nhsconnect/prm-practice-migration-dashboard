@@ -68,7 +68,7 @@ def make_splunk_request(splunk_host, token, date_range, search_text):
 def parse_threshold_from_telemetry(telemetry):
     lines = convert_to_lines(telemetry)
     if len(lines) == 0 or len(lines) == 1:
-        raise SplunkTelemetryMissing
+        raise SplunkTelemetryMissing(f"Telemetry received: \"{lines}\"")
     threshold = extract_threshold(lines)
     if float(threshold) <= 0:
         raise ValueError("Threshold is not a positive value")
