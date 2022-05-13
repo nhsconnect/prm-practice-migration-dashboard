@@ -604,7 +604,8 @@ def test_export_splunk_data_uploads_baseline_telemetry_to_s3(
         upload_telemetry_mock,
         lookup_asids_mock,
         exporter_lambda_env_vars,
-        get_baseline_telemetry_from_splunk_mock):
+        get_baseline_telemetry_from_splunk_mock,
+        calculate_baseline_date_range_mock):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     old_asid = lookup_asids_mock.return_value["old"]["asid"]
@@ -615,7 +616,9 @@ def test_export_splunk_data_uploads_baseline_telemetry_to_s3(
         ANY,
         exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"],
         get_baseline_telemetry_from_splunk_mock.return_value,
-        f"{old_asid}-baseline-telemetry.csv.gz"
+        f"{old_asid}-baseline-telemetry.csv.gz",
+        calculate_baseline_date_range_mock.return_value["start_date"],
+        calculate_baseline_date_range_mock.return_value["end_date"]
     )
 
 
@@ -625,7 +628,9 @@ def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
         upload_telemetry_mock,
         lookup_asids_mock,
         exporter_lambda_env_vars,
-        get_telemetry_from_splunk_mock):
+        get_telemetry_from_splunk_mock,
+        calculate_pre_cutover_date_range_mock,
+        calculate_post_cutover_date_range_mock):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     old_asid = "12345"
@@ -645,13 +650,17 @@ def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
         ANY,
         exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"],
         old_telemetry_data,
-        f"{old_asid}-telemetry.csv.gz"
+        f"{old_asid}-telemetry.csv.gz",
+        calculate_pre_cutover_date_range_mock.return_value["start_date"],
+        calculate_pre_cutover_date_range_mock.return_value["end_date"]
     )
     upload_telemetry_mock.assert_any_call(
         ANY,
         exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"],
         new_telemetry_data,
-        f"{new_asid}-telemetry.csv.gz"
+        f"{new_asid}-telemetry.csv.gz",
+        calculate_post_cutover_date_range_mock.return_value["start_date"],
+        calculate_post_cutover_date_range_mock.return_value["end_date"]
     )
 
 

@@ -24,9 +24,9 @@ def read_object_s3(client, object_uri: str):
     return body
 
 
-def write_object_s3(client, object_uri: str, body):
+def write_object_s3(client, object_uri: str, body, metadata={}):
     s3_object = _object_from_uri(client, object_uri)
-    s3_object.put(Body=body)
+    s3_object.put(Body=body, Metadata=metadata)
 
 
 def get_s3_resource():

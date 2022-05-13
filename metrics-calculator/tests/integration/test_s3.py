@@ -59,6 +59,21 @@ def test_write_object_s3_writes_object_content(s3):
 
 
 @mock_s3
+def test_write_object_s3_writes_object_content_with_metadata(s3):
+    s3.create_bucket(Bucket="test_bucket")
+
+    json_string = b'{"fruit": "mango"}'
+    metadata = {
+        "start_date": "start-date",
+        "end_date": "end-date"
+    }
+    write_object_s3(s3, "s3://test_bucket/test_object.json", json_string, metadata)
+
+    s3_object_response = s3.Object("test_bucket", "test_object.json").get()
+    assert s3_object_response["Metadata"] == metadata
+
+
+@mock_s3
 def test_objects_exist_returns_true_when_all_objects_exist(s3):
     s3.create_bucket(Bucket="test_bucket")
 

@@ -1,12 +1,12 @@
-import gzip
 import boto3
+import gzip
 import os
 import pytest
 
+from datetime import date
 from moto import mock_s3
-from chalicelib.csv_rows import csv_rows
-from chalicelib.s3 import read_object_s3
 
+from chalicelib.s3 import read_object_s3, _object_from_uri
 from chalicelib.telemetry import upload_telemetry
 
 
@@ -26,16 +26,29 @@ def s3(aws_credentials):
         yield boto3.resource('s3', region_name='us-east-1')
 
 
-def test_upload_telemetry(s3):
+def test_upload_telemetry_uploads_zipped_telemetry(s3):
     bucket_name = "bucket-name"
     telemetry_data = b"telemetry-data"
     filename = "telemetry-file"
     s3.create_bucket(Bucket=bucket_name)
 
-    upload_telemetry(s3, bucket_name, telemetry_data, filename)
+    upload_telemetry(s3, bucket_name, telemetry_data, filename, date(2021, 4, 6), date(2021, 6, 28))
 
     uploaded_telemetry = read_object_s3(s3, f"s3://{bucket_name}/{filename}")
     telemetry_string = uploaded_telemetry.read()
     unzipped_telemetry = gzip.decompress(telemetry_string)
 
     assert unzipped_telemetry == telemetry_data
+
+
+def test_upload_telemetry_saves_start_and_end_dates_as_metadata(s3):
+    bucket_name = "bucket-name"
+    filename = "telemetry-file"
+    s3.create_bucket(Bucket=bucket_name)
+    upload_telemetry(s3, bucket_name, b"telemetry-data", filename, date(2021, 4, 6), date(2021, 6, 28))
+
+    s3_object = _object_from_uri(s3, f"s3://{bucket_name}/{filename}")
+    response = s3_object.get()
+    returned_metadata = response["Metadata"]
+    assert returned_metadata["start_date"] == "2021-04-06"
+    assert returned_metadata["end_date"] == "2021-06-28"

@@ -158,17 +158,23 @@ def export_data_for_migration(migration, s3, asid_lookup_bucket_name, telemetry_
         s3,
         telemetry_bucket_name,
         baseline_telemetry,
-        baseline_telemetry_filename)
+        baseline_telemetry_filename,
+        baseline_date_range['start_date'],
+        baseline_date_range['end_date'])
     upload_telemetry(
         s3,
         telemetry_bucket_name,
         pre_cutover_telemetry,
-        pre_cutover_telemetry_filename)
+        pre_cutover_telemetry_filename,
+        pre_cutover_date_range['start_date'],
+        pre_cutover_date_range['end_date'])
     upload_telemetry(
         s3,
         telemetry_bucket_name,
         post_cutover_telemetry,
-        post_cutover_telemetry_filename)
+        post_cutover_telemetry_filename,
+        post_cutover_date_range['start_date'],
+        post_cutover_date_range['end_date'])
     logger.debug("Files successfully uploaded")
 
 
