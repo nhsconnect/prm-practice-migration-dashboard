@@ -7,6 +7,7 @@ import pytest
 from unittest.mock import ANY, Mock
 
 from app import calculate_dashboard_metrics_from_telemetry, export_splunk_data
+from chalicelib.get_data_from_splunk import SplunkTelemetryMissing
 from chalicelib.lookup_asids import AsidLookupError
 
 
@@ -399,6 +400,34 @@ def test_export_splunk_data_skips_migrations_with_missing_asids(
     export_splunk_data({}, {})
 
     lookup_asids_mock.assert_called_with(ANY, ANY, migration_occurrence_2)
+
+
+def test_export_splunk_data_skips_migrations_with_missing_baseline_telemetry(
+        mock_defaults,
+        occurrences_mock,
+        lookup_asids_mock,
+        get_baseline_telemetry_from_splunk_mock):
+    occurrences_mock.return_value = [aMigrationOccurrence(), aMigrationOccurrence()]
+    asid_set_1 = {
+        "old": {"asid": "12345", "name": ""},
+        "new": {"asid": "", "name": ""}
+    }
+    asid_set_2 = {
+        "old": {"asid": "09876", "name": ""},
+        "new": {"asid": "", "name": ""}
+    }
+    lookup_asids_mock.side_effect = [asid_set_1, asid_set_2]
+
+    def fail_on_first_lookup(splunk_host, splunk_token, old_asid, baseline_date_range):
+        if old_asid == asid_set_1["old"]["asid"]:
+            raise SplunkTelemetryMissing("Error!")
+        return b"""_time",count,avgmin2std
+"2021-09-06T00:00:00.000+0000",2,"4537.33933970307"""
+    get_baseline_telemetry_from_splunk_mock.side_effect = fail_on_first_lookup
+
+    export_splunk_data({}, {})
+
+    get_baseline_telemetry_from_splunk_mock.assert_called_with(ANY, ANY, asid_set_2["old"]["asid"], ANY)
 
 
 def test_export_splunk_data_gets_baseline_date_range(

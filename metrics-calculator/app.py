@@ -7,7 +7,7 @@ from chalice import Chalice
 from statistics import fmean
 
 from chalicelib.get_data_from_splunk import get_telemetry_from_splunk, get_baseline_telemetry_from_splunk, \
-    parse_threshold_from_telemetry
+    parse_threshold_from_telemetry, SplunkTelemetryMissing
 from chalicelib.get_splunk_api_token import get_splunk_api_token
 from chalicelib.lookup_asids import AsidLookupError, lookup_asids
 from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
@@ -97,6 +97,8 @@ def export_splunk_data(event, context):
                 number_of_successful_exports += 1
             except AsidLookupError:
                 logger.error("Error finding ASIDs", exc_info=True)
+            except SplunkTelemetryMissing:
+                logger.error("No telemetry found", exc_info=True)
     logger.info(
         f"Processed {len(known_migrations)} migrations, {number_of_successful_exports} exported successfully")
     return "ok"
