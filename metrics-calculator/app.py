@@ -10,11 +10,13 @@ from chalicelib.get_data_from_splunk import get_telemetry_from_splunk, get_basel
     parse_threshold_from_telemetry, SplunkTelemetryMissing
 from chalicelib.get_splunk_api_token import get_splunk_api_token
 from chalicelib.lookup_asids import AsidLookupError, lookup_asids
-from chalicelib.metrics_engine import calculate_cutover_start_and_end_date
+from chalicelib.metrics_engine import calculate_cutover_start_and_end_date, \
+    calculate_migrations_stats_per_supplier_combination
 from chalicelib.migration_occurrences import get_migration_occurrences
 from chalicelib.s3 import get_s3_resource, write_object_s3, objects_exist
 from chalicelib.telemetry import get_telemetry, upload_telemetry
-from chalicelib.calculate_date_range import calculate_baseline_date_range, calculate_pre_cutover_date_range, calculate_post_cutover_date_range
+from chalicelib.calculate_date_range import calculate_baseline_date_range, calculate_pre_cutover_date_range, \
+    calculate_post_cutover_date_range
 
 app = Chalice(app_name='metrics-calculator')
 logger = logging.getLogger("Metrics Calculator")
@@ -65,9 +67,11 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
 
     if len(metrics) > 0:
         mean_cutover = calculate_mean_cutover(metrics)
+        supplier_combination_stats = calculate_migrations_stats_per_supplier_combination(metrics)
 
         migrations = {
             "mean_cutover_duration": mean_cutover,
+            "supplier_combination_stats": supplier_combination_stats,
             "migrations": metrics
         }
         upload_migrations(s3, migrations)

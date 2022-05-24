@@ -136,8 +136,19 @@ def lookup_asids_mock(monkeypatch):
 @pytest.fixture
 def engine_mock(monkeypatch):
     mock = Mock()
-    mock.return_value = {"ods_code": "", "cutover_duration": 1}
+    mock.return_value = {
+        "cutover_startdate": "",
+        "cutover_enddate": "",
+        "cutover_duration": 1
+    }
     monkeypatch.setattr("app.calculate_cutover_start_and_end_date", mock)
+    yield mock
+
+
+@pytest.fixture
+def calculate_migrations_stats_per_supplier_combination_mock(monkeypatch):
+    mock = Mock()
+    monkeypatch.setattr("app.calculate_migrations_stats_per_supplier_combination", mock)
     yield mock
 
 
@@ -162,7 +173,9 @@ def mock_defaults(
         get_telemetry_from_splunk_mock,
         upload_telemetry_mock,
         get_baseline_telemetry_from_splunk_mock,
-        objects_exist_mock):
+        objects_exist_mock,
+        engine_mock,
+        upload_migrations_mock):
     pass
 
 
@@ -211,7 +224,10 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_practice_details_fr
         ANY,
         {
             "mean_cutover_duration": ANY,
+            "supplier_combination_stats": ANY,
             "migrations": [{
+                "cutover_startdate": ANY,
+                "cutover_enddate": ANY,
                 "practice_name": migration_occurrence["practice_name"],
                 "ccg_name": migration_occurrence["ccg_name"],
                 "ods_code": migration_occurrence["ods_code"],
@@ -254,7 +270,15 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures
         ANY,
         {
             "mean_cutover_duration": "1.0",
+            "supplier_combination_stats": [{
+                "source_system": ANY,
+                "target_system": ANY,
+                "count": ANY,
+                "mean_duration": ANY
+            }],
             "migrations": [{
+                "cutover_startdate": ANY,
+                "cutover_enddate": ANY,
                 "practice_name": ANY,
                 "ccg_name": ANY,
                 "ods_code": ANY,
@@ -294,8 +318,11 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multipl
         ANY,
         {
             "mean_cutover_duration": ANY,
+            "supplier_combination_stats": ANY,
             "migrations": [
                 {
+                    "cutover_startdate": ANY,
+                    "cutover_enddate": ANY,
                     "practice_name": migration_occurrence_1["practice_name"],
                     "ccg_name": migration_occurrence_1["ccg_name"],
                     "ods_code": migration_occurrence_1["ods_code"],
@@ -304,6 +331,8 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multipl
                     "cutover_duration": ANY
                 },
                 {
+                    "cutover_startdate": ANY,
+                    "cutover_enddate": ANY,
                     "practice_name": migration_occurrence_2["practice_name"],
                     "ccg_name": migration_occurrence_2["ccg_name"],
                     "ods_code": migration_occurrence_2["ods_code"],
@@ -348,8 +377,73 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_average_cutover_d
         ANY,
         {
             "mean_cutover_duration": expected_average,
+            "supplier_combination_stats": ANY,
             "migrations": ANY
         })
+
+
+def test_calculate_dashboard_metrics_from_telemetry_calculates_correct_stats_per_supplier_combination(
+        mock_defaults,
+        occurrences_mock,
+        telemetry_mock,
+        lookup_asids_mock,
+        engine_mock,
+        calculate_migrations_stats_per_supplier_combination_mock):
+    migration_occurrence = aMigrationOccurrence()
+    occurrences_mock.return_value = [migration_occurrence]
+    lookup_asids_mock.return_value = {
+        "old": {"asid": "12345", "name": "SystmOne"},
+        "new": {"asid": "09876", "name": "EMIS Web"}
+    }
+    engine_mock.return_value = {
+        "cutover_startdate": "2021-12-02T00:00:00+00:00",
+        "cutover_enddate": "2021-12-06T00:00:00+00:00",
+        "cutover_duration": 4,
+    }
+    org_details = {
+        "ods_code": migration_occurrence["ods_code"],
+        "ccg_name": migration_occurrence["ccg_name"],
+        "practice_name": migration_occurrence["practice_name"],
+    }
+    system_details = {
+        "source_system": lookup_asids_mock.return_value["old"]["name"],
+        "target_system": lookup_asids_mock.return_value["new"]["name"]
+    }
+    calculate_migrations_stats_per_supplier_combination_mock.return_value = [{
+        "source_system": "source-system",
+        "target_system": "target-system",
+        "count": 1,
+        "mean_duration": 4
+    }]
+    metrics = [(engine_mock.return_value | org_details | system_details)]
+
+    calculate_dashboard_metrics_from_telemetry({}, {})
+
+    calculate_migrations_stats_per_supplier_combination_mock.assert_called_once_with(metrics)
+
+
+def test_calculate_dashboard_metrics_from_telemetry_returns_correct_stats_per_supplier_combination(
+        mock_defaults,
+        occurrences_mock,
+        upload_migrations_mock,
+        calculate_migrations_stats_per_supplier_combination_mock):
+    migration_occurrence = aMigrationOccurrence()
+    occurrences_mock.return_value = [migration_occurrence]
+    calculate_migrations_stats_per_supplier_combination_mock.return_value = [{
+        "source_system": "source-system",
+        "target_system": "target-system",
+        "count": 1,
+        "mean_duration": 4
+    }]
+
+    calculate_dashboard_metrics_from_telemetry({}, {})
+
+    expected_migrations = {
+        "mean_cutover_duration": ANY,
+        "supplier_combination_stats": calculate_migrations_stats_per_supplier_combination_mock.return_value,
+        "migrations": ANY
+    }
+    upload_migrations_mock.assert_called_once_with(ANY, expected_migrations)
 
 
 def test_export_splunk_data_runs_without_any_occurrences_data(mock_defaults):

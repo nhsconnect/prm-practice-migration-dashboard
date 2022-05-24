@@ -106,6 +106,12 @@ def test_calculate_dashboard_metrics_from_telemetry(
 
     assert json.loads(migrations_body) == {
         "mean_cutover_duration": "4.0",
+        "supplier_combination_stats": [{
+            "source_system": "SystmOne",
+            "target_system": "EMIS Web",
+            "count": 1,
+            "mean_duration": 4
+        }],
         "migrations": [{
             "cutover_startdate": "2021-12-02T00:00:00+00:00",
             "cutover_enddate": "2021-12-06T00:00:00+00:00",

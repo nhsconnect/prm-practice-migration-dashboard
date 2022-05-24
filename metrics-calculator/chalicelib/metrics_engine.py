@@ -52,3 +52,35 @@ def calculate_threshold(old_asid_activity_per_day):
     first_day = old_asid_activity_per_day[0]
     threshold = float(first_day["avgmin2std"])
     return threshold
+
+
+def calculate_migrations_stats_per_supplier_combination(metrics):
+    running_stats = []
+    for metric in metrics:
+        supplier_combination_stats = next((x for x in running_stats if is_matching_combination(metric, x)), None)
+        if supplier_combination_stats is None:
+            running_stats.append({
+                "source_system": metric["source_system"],
+                "target_system": metric["target_system"],
+                "count": 1,
+                "cumulative_duration": metric["cutover_duration"]
+            })
+        if supplier_combination_stats:
+            supplier_combination_stats["count"] += 1
+            supplier_combination_stats["cumulative_duration"] += metric["cutover_duration"]
+
+    results = []
+    for stats in running_stats:
+        mean_duration = stats["cumulative_duration"] / stats["count"]
+        results.append({
+            "source_system": stats["source_system"],
+            "target_system": stats["target_system"],
+            "count": stats["count"],
+            "mean_duration": mean_duration
+        })
+    return results
+
+
+def is_matching_combination(metric, combination):
+    return combination["source_system"] == metric["source_system"] and \
+           combination["target_system"] == metric["target_system"]
