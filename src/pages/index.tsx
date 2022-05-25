@@ -12,12 +12,13 @@ const IndexPage: FC = () => {
   <Layout>
       <h2>General Statistics</h2>
       <p data-testid="observation-notice">This data has been derived from <strong>{migrations.migrations.length}</strong> observed practice migration(s).</p>
-    <MigrationStat
+      <MigrationStat
           label={content.meanCutoverDurationLabel}
           value={migrations.mean_cutover_duration}
           unit={content.meanCutoverDurationUnit} />
+      <h2>Statistics Per Supplier Combination</h2>
       <SupplierCombinationStatsTable supplierCombinationStats={migrations.supplier_combination_stats} />
-      <h2>Migrations</h2>
+      <h2>Statistics Per Practice</h2>
       <MigrationStatsTable migrationStats={migrations.migrations} />
   </Layout>
 )};
