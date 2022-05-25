@@ -1,0 +1,8 @@
+{
+  "headings": {
+    "sourceSystem": "Source Supplier",
+    "targetSystem": "Target Supplier",
+    "count": "Observed Migrations",
+    "meanDuration": "Average Cutover Duration (Days)"
+  }
+}
