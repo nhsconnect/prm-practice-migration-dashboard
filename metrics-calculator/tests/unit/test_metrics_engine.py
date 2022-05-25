@@ -77,15 +77,15 @@ def test_calculate_migrations_stats_per_supplier_combination_returns_correct_cou
 def test_calculate_migrations_stats_per_supplier_combination_returns_correct_mean_cutover_duration_for_multiple_combination():
     metrics = [{"source_system": "source-system-1",
                 "target_system": "target-system",
-                "cutover_duration": 4
+                "cutover_duration": 5
                 },
                {"source_system": "source-system-1",
                 "target_system": "target-system",
-                "cutover_duration": 8
+                "cutover_duration": 5
                 },
-               {"source_system": "source-system-2",
+               {"source_system": "source-system-1",
                 "target_system": "target-system",
-                "cutover_duration": 4
+                "cutover_duration": 6
                 },
                {"source_system": "source-system-2",
                 "target_system": "target-system",
@@ -98,13 +98,13 @@ def test_calculate_migrations_stats_per_supplier_combination_returns_correct_mea
             "source_system": metrics[0]["source_system"],
             "target_system": metrics[0]["target_system"],
             "count": ANY,
-            "mean_duration": 6
+            "mean_duration": 5.3
         },
         {
-            "source_system": metrics[2]["source_system"],
-            "target_system": metrics[2]["target_system"],
+            "source_system": metrics[3]["source_system"],
+            "target_system": metrics[3]["target_system"],
             "count": ANY,
-            "mean_duration": 6
+            "mean_duration": 8.0
         }]
     assert result == expected_result
 

@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from dateutil.parser import *
 
 
@@ -72,11 +74,13 @@ def calculate_migrations_stats_per_supplier_combination(metrics):
     results = []
     for stats in running_stats:
         mean_duration = stats["cumulative_duration"] / stats["count"]
+        rounded_mean_duration = Decimal(mean_duration).quantize(
+            Decimal('.1'), rounding=ROUND_HALF_UP)
         results.append({
             "source_system": stats["source_system"],
             "target_system": stats["target_system"],
             "count": stats["count"],
-            "mean_duration": mean_duration
+            "mean_duration": float(rounded_mean_duration)
         })
     return results
 
