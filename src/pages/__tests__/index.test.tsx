@@ -9,6 +9,14 @@ jest.mock(
   "../../data/metrics/migrations.json",
   () => ({
     mean_cutover_duration: "12.0",
+    supplier_combination_stats: [
+      {
+        source_system: "source-system",
+        target_system: "target-system",
+        count: 2,
+        mean_duration: 14,
+      },
+    ],
     migrations: [
       {
         cutover_startdate: "2022-01-01T02:03:04Z",
@@ -26,7 +34,7 @@ jest.mock(
 );
 
 describe("index", () => {
-  it("renders a table", () => {
+  it("renders a table containing migration data", () => {
     render(<IndexPage />);
 
     expect(screen.queryByText("Cutover Start Date")).toBeTruthy();
@@ -63,5 +71,19 @@ describe("index", () => {
     expect(screen.getByTestId("observation-notice").textContent).toBe(
       "This data has been derived from 1 observed practice migration(s)."
     );
+  });
+
+  it("renders a table containing supplier combination stats", () => {
+    render(<IndexPage />);
+
+    expect(screen.getByText("Source Supplier")).toBeInTheDocument();
+    expect(screen.getByText("Target Supplier")).toBeInTheDocument();
+    expect(screen.getByText("Observed Migrations")).toBeInTheDocument();
+    expect(screen.getByText("Average Cutover Duration (Days)")).toBeInTheDocument();
+
+    expect(screen.getByText("source-system")).toBeInTheDocument();
+    expect(screen.getByText("target-system")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("14")).toBeInTheDocument();
   });
 });

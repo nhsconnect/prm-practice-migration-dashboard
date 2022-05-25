@@ -5,6 +5,7 @@ import migrations from "../data/metrics/migrations.json";
 import MigrationStatsTable from "../components/MigrationStatsTable";
 import {MigrationStat} from "../components/MigrationStat/MigrationStat";
 import content from "../data/content/index.json";
+import SupplierCombinationStatsTable from "../components/SupplierCombinationStatsTable";
 
 const IndexPage: FC = () => {
     return (
@@ -15,6 +16,7 @@ const IndexPage: FC = () => {
           label={content.meanCutoverDurationLabel}
           value={migrations.mean_cutover_duration}
           unit={content.meanCutoverDurationUnit} />
+      <SupplierCombinationStatsTable supplierCombinationStats={migrations.supplier_combination_stats} />
       <h2>Migrations</h2>
       <MigrationStatsTable migrationStats={migrations.migrations} />
   </Layout>
