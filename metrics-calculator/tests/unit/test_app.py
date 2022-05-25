@@ -269,7 +269,7 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures
     upload_migrations_mock.assert_called_once_with(
         ANY,
         {
-            "mean_cutover_duration": "1.0",
+            "mean_cutover_duration": 1.0,
             "supplier_combination_stats": [{
                 "source_system": ANY,
                 "target_system": ANY,
@@ -346,12 +346,12 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multipl
 @pytest.mark.parametrize(
     "durations,expected_average",
     [
-        ([1], "1.0"),
-        ([1, 1], "1.0"),
-        ([4, 2], "3.0"),
-        ([4, 3], "3.5"),
-        ([2, 1, 1, 1], "1.3"),
-        ([2, 1, 1, 1, 1, 1, 1], "1.1"),
+        ([1], 1.0),
+        ([1, 1], 1.0),
+        ([4, 2], 3.0),
+        ([4, 3], 3.5),
+        ([2, 1, 1, 1], 1.3),
+        ([2, 1, 1, 1, 1, 1, 1], 1.1),
     ])
 def test_calculate_dashboard_metrics_from_telemetry_calculates_average_cutover_duration_to_one_decimal_place(
         mock_defaults,

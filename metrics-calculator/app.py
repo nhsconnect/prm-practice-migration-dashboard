@@ -199,4 +199,4 @@ def calculate_mean_cutover(metrics):
     mean = fmean(durations)
     rounded_mean = Decimal(mean).quantize(
         Decimal('.1'), rounding=ROUND_HALF_UP)
-    return f"{rounded_mean}"
+    return float(rounded_mean)

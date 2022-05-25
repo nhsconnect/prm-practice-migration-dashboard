@@ -8,12 +8,12 @@ describe("MigrationStat", () => {
     render(
       <MigrationStat
         label={"Average Cutover Duration"}
-        value={"16.0"}
+        value={16.0}
         unit={"days"}
       />
     );
 
-    expect(screen.getByText("16.0")).toBeInTheDocument();
+    expect(screen.getByText(16.0)).toBeInTheDocument();
     expect(
       screen.getByText("Average Cutover Duration (days):")
     ).toBeInTheDocument();

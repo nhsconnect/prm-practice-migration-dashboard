@@ -3,7 +3,7 @@ import { FC } from "react";
 
 interface MigrationStatProps {
   label: string;
-  value: string;
+  value: number;
   unit: string;
 }
 
