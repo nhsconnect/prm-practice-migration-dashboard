@@ -22,9 +22,7 @@ function formatDate(isoDateTime?: string): string {
   if (!isoDateTime) {
     return "—";
   }
-  return DateTime.fromISO(isoDateTime).toLocaleString(
-    DateTime.DATE_MED_WITH_WEEKDAY
-  );
+  return DateTime.fromISO(isoDateTime).toFormat("EEE, d LLL yyyy");
 }
 
 function formatPracticeName(practice_name?: string, ods_code?: string): string {
