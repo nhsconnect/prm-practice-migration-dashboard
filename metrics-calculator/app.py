@@ -96,10 +96,11 @@ def export_splunk_data(event, context):
     if len(known_migrations) > 0:
         ssm = get_ssm_client()
         splunk_token = get_splunk_api_token(ssm, "/prod/splunk-api-token")
+        asids_lookup = lookup_all_asids(s3, asid_lookup_bucket_name, known_migrations)
         for migration in known_migrations:
             try:
                 export_data_for_migration(
-                    migration, s3, asid_lookup_bucket_name, telemetry_bucket_name, splunk_token, splunk_host)
+                    migration, s3, asids_lookup, telemetry_bucket_name, splunk_token, splunk_host)
                 number_of_successful_exports += 1
             except AsidLookupError:
                 logger.error("Error finding ASIDs", exc_info=True)
@@ -110,9 +111,10 @@ def export_splunk_data(event, context):
     return "ok"
 
 
-def export_data_for_migration(migration, s3, asid_lookup_bucket_name, telemetry_bucket_name, splunk_token, splunk_host):
-    logger.debug(f"ODS code: {migration['ods_code']}")
-    asid_lookup = lookup_asids(s3, asid_lookup_bucket_name, migration)
+def export_data_for_migration(migration, s3, asids_lookup, telemetry_bucket_name, splunk_token, splunk_host):
+    ods_code = migration["ods_code"]
+    logger.debug(f"ODS code: {ods_code}")
+    asid_lookup = get_asids_for_ods_code(asids_lookup, ods_code)
     old_asid = asid_lookup["old"]["asid"]
     logger.debug(f"Old asid: {old_asid}")
     new_asid = asid_lookup["new"]["asid"]

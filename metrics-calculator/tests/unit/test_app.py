@@ -481,24 +481,25 @@ def test_export_splunk_data_runs_without_any_occurrences_data(mock_defaults):
 def test_export_splunk_data_gets_asids_for_ods_code_in_occurrences_data(
         mock_defaults,
         occurrences_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         exporter_lambda_env_vars):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
 
-    lookup_asids_mock.assert_called_once_with(
+    lookup_all_asids_mock.assert_called_once_with(
         ANY,
         exporter_lambda_env_vars["ASID_LOOKUP_BUCKET_NAME"],
-        migration_occurrence
+        occurrences_mock.return_value
     )
 
 
 def test_export_splunk_data_skips_migrations_with_missing_asids(
         mock_defaults,
         occurrences_mock,
-        lookup_asids_mock):
+        lookup_all_asids_mock,
+        calculate_baseline_date_range_mock):
     migration_occurrence_1 = aMigrationOccurrence()
     migration_occurrence_2 = {
         "ods_code": "B22222",
@@ -507,39 +508,48 @@ def test_export_splunk_data_skips_migrations_with_missing_asids(
         "date": date(2021, 7, 11)
     }
     occurrences_mock.return_value = [migration_occurrence_1, migration_occurrence_2]
-
-    def fail_on_first_lookup(s3, bucket_name, migration):
-        if migration == migration_occurrence_1:
-            raise AsidLookupError("Error!")
-        return {
+    lookup_all_asids_mock.return_value = {
+        migration_occurrence_1["ods_code"]: {
             "old": {"asid": "", "name": ""},
             "new": {"asid": "", "name": ""}
+        },
+        migration_occurrence_2["ods_code"]: {
+            "old": {"asid": "13579", "name": "EMIS Web"},
+            "new": {"asid": "08642", "name": "SystmOne"}
         }
-    lookup_asids_mock.side_effect = fail_on_first_lookup
+    }
 
     export_splunk_data({}, {})
 
-    lookup_asids_mock.assert_called_with(ANY, ANY, migration_occurrence_2)
+    calculate_baseline_date_range_mock.assert_called_with(migration_occurrence_2["date"])
 
 
 def test_export_splunk_data_skips_migrations_with_missing_baseline_telemetry(
         mock_defaults,
         occurrences_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         get_baseline_telemetry_from_splunk_mock):
-    occurrences_mock.return_value = [aMigrationOccurrence(), aMigrationOccurrence()]
-    asid_set_1 = {
-        "old": {"asid": "12345", "name": ""},
-        "new": {"asid": "", "name": ""}
+    migration_occurrence_1 = aMigrationOccurrence()
+    migration_occurrence_2 = {
+        "ods_code": "B22222",
+        "ccg_name": "",
+        "practice_name": "",
+        "date": date(2021, 7, 11)
     }
-    asid_set_2 = {
-        "old": {"asid": "09876", "name": ""},
-        "new": {"asid": "", "name": ""}
+    occurrences_mock.return_value = [migration_occurrence_1, migration_occurrence_2]
+    lookup_all_asids_mock.return_value = {
+        migration_occurrence_1["ods_code"]: {
+            "old": {"asid": "12345", "name": "EMIS Web"},
+            "new": {"asid": "09876", "name": "SystmOne"}
+        },
+        migration_occurrence_2["ods_code"]: {
+            "old": {"asid": "13579", "name": "EMIS Web"},
+            "new": {"asid": "08642", "name": "SystmOne"}
+        }
     }
-    lookup_asids_mock.side_effect = [asid_set_1, asid_set_2]
 
     def fail_on_first_lookup(splunk_host, splunk_token, old_asid, baseline_date_range):
-        if old_asid == asid_set_1["old"]["asid"]:
+        if old_asid == lookup_all_asids_mock.return_value[migration_occurrence_1["ods_code"]]["old"]["asid"]:
             raise SplunkTelemetryMissing("Error!")
         return b"""_time",count,avgmin2std
 "2021-09-06T00:00:00.000+0000",2,"4537.33933970307"""
@@ -547,7 +557,8 @@ def test_export_splunk_data_skips_migrations_with_missing_baseline_telemetry(
 
     export_splunk_data({}, {})
 
-    get_baseline_telemetry_from_splunk_mock.assert_called_with(ANY, ANY, asid_set_2["old"]["asid"], ANY)
+    get_baseline_telemetry_from_splunk_mock.assert_called_with(
+        ANY, ANY, lookup_all_asids_mock.return_value[migration_occurrence_2["ods_code"]]["old"]["asid"], ANY)
 
 
 def test_export_splunk_data_gets_baseline_date_range(
@@ -632,15 +643,18 @@ def test_export_splunk_data_checks_for_existing_telemetry_files(
         mock_defaults,
         occurrences_mock,
         objects_exist_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         exporter_lambda_env_vars):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
+    ods_code = occurrences_mock.return_value[0]["ods_code"]
     old_asid = "12345"
     new_asid = "09876"
-    lookup_asids_mock.return_value = {
-        "old": {"asid": old_asid, "name": ""},
-        "new": {"asid": new_asid, "name": ""}
+    lookup_all_asids_mock.return_value = {
+        ods_code: {
+            "old": {"asid": old_asid, "name": "EMIS Web"},
+            "new": {"asid": new_asid, "name": "SystmOne"}
+        }
     }
     baseline_telemetry_filename = f"{old_asid}-baseline-telemetry.csv.gz"
     pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
@@ -675,16 +689,20 @@ def test_export_splunk_data_queries_splunk_for_baseline_telemetry(
         mock_defaults,
         occurrences_mock,
         calculate_baseline_date_range_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         exporter_lambda_env_vars,
         get_splunk_api_token_mock,
         get_baseline_telemetry_from_splunk_mock):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
+    ods_code = occurrences_mock.return_value[0]["ods_code"]
     old_asid = "12345"
-    lookup_asids_mock.return_value = {
-        "old": {"asid": old_asid, "name": ""},
-        "new": {"asid": "", "name": ""}
+    new_asid = "09876"
+    lookup_all_asids_mock.return_value = {
+        ods_code: {
+            "old": {"asid": old_asid, "name": "EMIS Web"},
+            "new": {"asid": new_asid, "name": "SystmOne"}
+        }
     }
 
     export_splunk_data({}, {})
@@ -715,18 +733,21 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         occurrences_mock,
         calculate_pre_cutover_date_range_mock,
         calculate_post_cutover_date_range_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         exporter_lambda_env_vars,
         get_splunk_api_token_mock,
         parse_threshold_from_telemetry_mock,
         get_telemetry_from_splunk_mock):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
+    ods_code = occurrences_mock.return_value[0]["ods_code"]
     old_asid = "12345"
     new_asid = "09876"
-    lookup_asids_mock.return_value = {
-        "old": {"asid": old_asid, "name": ""},
-        "new": {"asid": new_asid, "name": ""}
+    lookup_all_asids_mock.return_value = {
+        ods_code: {
+            "old": {"asid": old_asid, "name": "EMIS Web"},
+            "new": {"asid": new_asid, "name": "SystmOne"}
+        }
     }
     baseline_threshold = "10"
     parse_threshold_from_telemetry_mock.return_value = baseline_threshold
@@ -751,13 +772,21 @@ def test_export_splunk_data_uploads_baseline_telemetry_to_s3(
         mock_defaults,
         occurrences_mock,
         upload_telemetry_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         exporter_lambda_env_vars,
         get_baseline_telemetry_from_splunk_mock,
         calculate_baseline_date_range_mock):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
-    old_asid = lookup_asids_mock.return_value["old"]["asid"]
+    ods_code = occurrences_mock.return_value[0]["ods_code"]
+    old_asid = "12345"
+    new_asid = "09876"
+    lookup_all_asids_mock.return_value = {
+        ods_code: {
+            "old": {"asid": old_asid, "name": "EMIS Web"},
+            "new": {"asid": new_asid, "name": "SystmOne"}
+        }
+    }
 
     export_splunk_data({}, {})
 
@@ -775,18 +804,21 @@ def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
         mock_defaults,
         occurrences_mock,
         upload_telemetry_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         exporter_lambda_env_vars,
         get_telemetry_from_splunk_mock,
         calculate_pre_cutover_date_range_mock,
         calculate_post_cutover_date_range_mock):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
+    ods_code = occurrences_mock.return_value[0]["ods_code"]
     old_asid = "12345"
     new_asid = "09876"
-    lookup_asids_mock.return_value = {
-        "old": {"asid": old_asid, "name": ""},
-        "new": {"asid": new_asid, "name": ""}
+    lookup_all_asids_mock.return_value = {
+        ods_code: {
+            "old": {"asid": old_asid, "name": "EMIS Web"},
+            "new": {"asid": new_asid, "name": "SystmOne"}
+        }
     }
     old_telemetry_data = "old"
     new_telemetry_data = "new"
