@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 import os
+from functools import reduce
 from itertools import chain
 import json
 import pytest
@@ -134,6 +135,19 @@ def lookup_asids_mock(monkeypatch):
 
 
 @pytest.fixture
+def lookup_all_asids_mock(monkeypatch):
+    mock = Mock()
+    mock.return_value = {
+       "A32323": {
+        "old": {"asid": "12345", "name": ""},
+        "new": {"asid": "09876", "name": ""}
+        }
+    }
+    monkeypatch.setattr("app.lookup_all_asids", mock)
+    yield mock
+
+
+@pytest.fixture
 def engine_mock(monkeypatch):
     mock = Mock()
     mock.return_value = {
@@ -168,6 +182,7 @@ def mock_defaults(
         telemetry_mock,
         occurrences_mock,
         lookup_asids_mock,
+        lookup_all_asids_mock,
         parse_threshold_from_telemetry_mock,
         get_splunk_api_token_mock,
         get_telemetry_from_splunk_mock,
@@ -212,7 +227,6 @@ def test_calculate_dashboard_metrics_from_telemetry_runs_without_any_occurrences
 def test_calculate_dashboard_metrics_from_telemetry_includes_practice_details_from_occurrences_data_in_migration_metrics(
         mock_defaults,
         occurrences_mock,
-        lookup_asids_mock,
         engine_mock,
         upload_migrations_mock):
     migration_occurrence = aMigrationOccurrence()
@@ -241,7 +255,7 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_practice_details_fr
 def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures(
         mock_defaults,
         occurrences_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         engine_mock,
         upload_migrations_mock):
     migration_occurrence_1 = {
@@ -254,15 +268,16 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures
     }
     occurrences_mock.return_value = [
         migration_occurrence_1, migration_occurrence_2]
-
-    def fail_on_first_lookup(s3, bucket_name, migration):
-        if migration == migration_occurrence_1:
-            raise AsidLookupError("Error!")
-        return {
+    lookup_all_asids_mock.return_value = {
+        migration_occurrence_1["ods_code"]: {
             "old": {"asid": "", "name": ""},
             "new": {"asid": "", "name": ""}
+        },
+        migration_occurrence_2["ods_code"]: {
+            "old": {"asid": "12345", "name": "EMIS Web"},
+            "new": {"asid": "09876", "name": "SystmOne"}
         }
-    lookup_asids_mock.side_effect = fail_on_first_lookup
+    }
 
     calculate_dashboard_metrics_from_telemetry({}, {})
 
@@ -293,7 +308,7 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multipl
         mock_defaults,
         occurrences_mock,
         telemetry_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         engine_mock,
         upload_migrations_mock):
     migration_occurrence_1 = {
@@ -308,6 +323,16 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multipl
     }
     occurrences_mock.return_value = [
         migration_occurrence_1, migration_occurrence_2]
+    lookup_all_asids_mock.return_value = {
+        migration_occurrence_1["ods_code"]: {
+            "old": {"asid": "12345", "name": "EMIS Web"},
+            "new": {"asid": "09876", "name": "SystmOne"}
+        },
+        migration_occurrence_2["ods_code"]: {
+            "old": {"asid": "13579", "name": "EMIS Web"},
+            "new": {"asid": "08642", "name": "SystmOne"}
+        }
+    }
     telemetry_mock.side_effect = [
         old_telemetry_generator(), new_telemetry_generator(),
         old_telemetry_generator(), new_telemetry_generator()]
@@ -357,13 +382,17 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_average_cutover_d
         mock_defaults,
         occurrences_mock,
         telemetry_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         engine_mock,
         upload_migrations_mock,
         durations,
         expected_average):
     occurrences_mock.return_value = map(
-        lambda x: {"ods_code": "", "ccg_name": "", "practice_name": ""}, durations)
+        lambda x: {"ods_code": "A32323", "ccg_name": "", "practice_name": ""}, durations)
+    asids_array = map(
+        lambda x: {"A32323": {"old": {"asid": "12345", "name": ""},
+                              "new": {"asid": "09876", "name": ""}}}, durations)
+    lookup_all_asids_mock.return_value = reduce(lambda a, b: a | b, asids_array)
     # The use of chain here is inspired by the answer to this Stack Overflow question:
     # https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-a-list-of-lists
     telemetry_mock.side_effect = chain(
@@ -386,28 +415,25 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_correct_stats_per
         mock_defaults,
         occurrences_mock,
         telemetry_mock,
-        lookup_asids_mock,
+        lookup_all_asids_mock,
         engine_mock,
         calculate_migrations_stats_per_supplier_combination_mock):
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
-    lookup_asids_mock.return_value = {
-        "old": {"asid": "12345", "name": "SystmOne"},
-        "new": {"asid": "09876", "name": "EMIS Web"}
-    }
     engine_mock.return_value = {
         "cutover_startdate": "2021-12-02T00:00:00+00:00",
         "cutover_enddate": "2021-12-06T00:00:00+00:00",
         "cutover_duration": 4,
     }
+    ods_code = migration_occurrence["ods_code"]
     org_details = {
-        "ods_code": migration_occurrence["ods_code"],
+        "ods_code": ods_code,
         "ccg_name": migration_occurrence["ccg_name"],
         "practice_name": migration_occurrence["practice_name"],
     }
     system_details = {
-        "source_system": lookup_asids_mock.return_value["old"]["name"],
-        "target_system": lookup_asids_mock.return_value["new"]["name"]
+        "source_system": lookup_all_asids_mock.return_value[ods_code]["old"]["name"],
+        "target_system": lookup_all_asids_mock.return_value[ods_code]["new"]["name"]
     }
     calculate_migrations_stats_per_supplier_combination_mock.return_value = [{
         "source_system": "source-system",

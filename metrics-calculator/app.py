@@ -9,6 +9,7 @@ from statistics import fmean
 from chalicelib.get_data_from_splunk import get_telemetry_from_splunk, get_baseline_telemetry_from_splunk, \
     parse_threshold_from_telemetry, SplunkTelemetryMissing
 from chalicelib.get_splunk_api_token import get_splunk_api_token
+from chalicelib.lookup_all_asids import lookup_all_asids
 from chalicelib.lookup_asids import AsidLookupError, lookup_asids
 from chalicelib.metrics_engine import calculate_cutover_start_and_end_date, \
     calculate_migrations_stats_per_supplier_combination
@@ -31,12 +32,13 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
     s3 = get_s3_resource()
     known_migrations = get_migration_occurrences(
         s3, occurrences_bucket_name)
+    asids_lookup = lookup_all_asids(s3, asid_lookup_bucket_name, known_migrations)
 
     metrics = []
     for migration in known_migrations:
         try:
-            asid_lookup = lookup_asids(
-                s3, asid_lookup_bucket_name, migration)
+            ods_code = migration["ods_code"]
+            asid_lookup = get_asids_for_ods_code(asids_lookup, ods_code)
             old_asid = asid_lookup["old"]["asid"]
             logger.debug(f"Old asid: {old_asid}")
             new_asid = asid_lookup["new"]["asid"]
@@ -53,7 +55,7 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
                 old_telemetry_generator, new_telemetry_generator)
 
             org_details = {
-                "ods_code": migration["ods_code"],
+                "ods_code": ods_code,
                 "ccg_name": migration["ccg_name"],
                 "practice_name": migration["practice_name"],
             }
@@ -200,3 +202,14 @@ def calculate_mean_cutover(metrics):
     rounded_mean = Decimal(mean).quantize(
         Decimal('.1'), rounding=ROUND_HALF_UP)
     return float(rounded_mean)
+
+
+def get_asids_for_ods_code(asids_lookup, ods_code):
+    asid_lookup = asids_lookup[ods_code]
+    if len(asid_lookup["old"]["asid"]) == 0 and len(asid_lookup["new"]["asid"]) == 0:
+        raise AsidLookupError(f"No ASIDs found for the ODS code \"{ods_code}\"")
+    elif len(asid_lookup["old"]["asid"]) == 0:
+        raise AsidLookupError(f"Only new ASID found for the ODS code \"{ods_code}\"")
+    elif len(asid_lookup["new"]["asid"]) == 0:
+        raise AsidLookupError(f"Only old ASID found for the ODS code \"{ods_code}\"")
+    return asid_lookup
