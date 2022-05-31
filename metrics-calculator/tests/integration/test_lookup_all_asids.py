@@ -270,3 +270,60 @@ def test_lookup_all_asids_returns_both_asids_for_multiple_matching_ods_codes(s3)
         }
     }
     assert result == expected_result
+
+
+def test_lookup_all_asids_stops_when_all_asids_are_found(s3):
+    ods_code_1 = "ods-code-1"
+    ods_code_2 = "ods-code-2"
+    activated_product_id_1 = EMIS_PRODUCT_ID
+    activated_product_id_2 = TPP_PRODUCT_ID
+    new_asid_1 = {"asid": "new-asid-1", "name": "EMIS Web"}
+    old_asid_1 = {"asid": "old-asid-1", "name": "Vision 3"}
+    new_asid_2 = {"asid": "new-asid-2", "name": "SystmOne"}
+    old_asid_2 = {"asid": "old-asid-2", "name": "EMIS Web"}
+    bucket_name = "test-bucket"
+    asid_lookup_bucket = s3.create_bucket(Bucket=bucket_name)
+    asid_lookup_bucket.Object("asid-lookup-1.csv.gz").put(
+        Body=build_gzip_csv(
+            header=ASID_LOOKUP_HEADERS,
+            rows=[
+                [old_asid_1["asid"], ods_code_1, "", "", old_asid_1["name"], "", ""],
+                [old_asid_2["asid"], ods_code_2, "", "", old_asid_2["name"], "", ""],
+                [new_asid_2["asid"], ods_code_2, "", "", new_asid_2["name"], "", ""]
+            ],
+        ))
+    asid_lookup_bucket.Object("asid-lookup-2.csv.gz").put(
+        Body=build_gzip_csv(
+            header=ASID_LOOKUP_HEADERS,
+            rows=[
+                [old_asid_1["asid"], ods_code_1, "", "", old_asid_1["name"], "", ""],
+                [new_asid_1["asid"], ods_code_1, "", "", new_asid_1["name"], "", ""],
+                [old_asid_2["asid"]+"_SHOULD_NOT_RETURN_THIS_ASID", ods_code_2, "", "", old_asid_2["name"], "", ""],
+                [new_asid_2["asid"]+"_SHOULD_NOT_RETURN_THIS_ASID", ods_code_2, "", "", new_asid_2["name"], "", ""]
+            ],
+        ))
+
+    migrations = [
+        {
+            "ods_code": ods_code_1,
+            "product_id": activated_product_id_1
+        },
+        {
+            "ods_code": ods_code_2,
+            "product_id": activated_product_id_2
+        }
+    ]
+
+    result = lookup_all_asids(s3, bucket_name, migrations)
+
+    expected_result = {
+        ods_code_1: {
+            "new": new_asid_1,
+            "old": old_asid_1
+        },
+        ods_code_2: {
+            "new": new_asid_2,
+            "old": old_asid_2
+        }
+    }
+    assert result == expected_result

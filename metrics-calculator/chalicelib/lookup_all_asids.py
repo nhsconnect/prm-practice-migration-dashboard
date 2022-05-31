@@ -15,17 +15,21 @@ def lookup_all_asids(s3, bucket_name, migrations):
     if len(migrations) == 0:
         return result
     asid_lookup_bucket = s3.Bucket(bucket_name)
+    list_of_migrations = list(migrations)
     for lookup_file in asid_lookup_bucket.objects.all():
         rows = list(csv_rows(lookup_file.get()["Body"]))
-        for migration in migrations:
+        for migration in list(list_of_migrations):
             ods_code = migration["ods_code"]
             asids = {"old": {"asid": "", "name": ""}, "new": {"asid": "", "name": ""}}
             if ods_code not in result:
                 result[ods_code] = asids
             current_file_result = find_asids_in_file(migration, ods_code, rows)
             result[ods_code] |= current_file_result
+            if result[ods_code]["old"]["asid"] and result[ods_code]["new"]["asid"]:
+                list_of_migrations.remove(migration)
     if len(result) == 0:
         raise AsidLookupError(f"Bucket {bucket_name} is empty")
+
     return result
 
 
