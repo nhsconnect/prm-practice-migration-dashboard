@@ -57,7 +57,7 @@ def upload_telemetry_mock(monkeypatch):
 
 @pytest.fixture
 def occurrences_mock(monkeypatch):
-    mock = Mock(return_value=[])
+    mock = Mock(return_value=[aMigrationOccurrence()])
     monkeypatch.setattr("app.get_migration_occurrences", mock)
     yield mock
 
@@ -228,11 +228,8 @@ def test_calculate_dashboard_metrics_from_telemetry_runs_without_any_occurrences
 
 def test_calculate_dashboard_metrics_from_telemetry_includes_practice_details_from_occurrences_data_in_migration_metrics(
         mock_defaults,
-        occurrences_mock,
-        engine_mock,
         upload_migrations_mock):
     migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
 
     calculate_dashboard_metrics_from_telemetry({}, {})
 
@@ -258,16 +255,9 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures
         mock_defaults,
         occurrences_mock,
         lookup_all_asids_mock,
-        engine_mock,
         upload_migrations_mock):
-    migration_occurrence_1 = {
-        "ods_code": "A11111",
-    }
-    migration_occurrence_2 = {
-        "ods_code": "B22222",
-        "ccg_name": "",
-        "practice_name": "",
-    }
+    migration_occurrence_1 = aMigrationOccurrence("A11111")
+    migration_occurrence_2 = aMigrationOccurrence("B22222", "CCG Name", "Practice Name")
     occurrences_mock.return_value = [
         migration_occurrence_1, migration_occurrence_2]
     lookup_all_asids_mock.return_value = {
@@ -305,18 +295,9 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multipl
         occurrences_mock,
         telemetry_mock,
         lookup_all_asids_mock,
-        engine_mock,
         upload_migrations_mock):
-    migration_occurrence_1 = {
-        "ods_code": "A32323",
-        "ccg_name": "First CCG",
-        "practice_name": "First Surgery",
-    }
-    migration_occurrence_2 = {
-        "ods_code": "B22222",
-        "ccg_name": "Second CCG",
-        "practice_name": "Second Surgery",
-    }
+    migration_occurrence_1 = aMigrationOccurrence("A32323", "First CCG", "First Surgery")
+    migration_occurrence_2 = aMigrationOccurrence("B22222", "Second CCG", "Second Surgery")
     occurrences_mock.return_value = [
         migration_occurrence_1, migration_occurrence_2]
     lookup_all_asids_mock.return_value = {
@@ -378,7 +359,7 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_average_cutover_d
         durations,
         expected_average):
     occurrences_mock.return_value = map(
-        lambda x: {"ods_code": "A32323", "ccg_name": "", "practice_name": ""}, durations)
+        lambda x: aMigrationOccurrence("A32323", "CCG Name", "Practice Name"), durations)
     asids_array = map(
         lambda x: {"A32323": anAsidPair()}, durations)
     lookup_all_asids_mock.return_value = reduce(lambda a, b: a | b, asids_array)
@@ -402,13 +383,11 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_average_cutover_d
 
 def test_calculate_dashboard_metrics_from_telemetry_calculates_correct_stats_per_supplier_combination(
         mock_defaults,
-        occurrences_mock,
         telemetry_mock,
         lookup_all_asids_mock,
         engine_mock,
         calculate_migrations_stats_per_supplier_combination_mock):
     migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
     engine_mock.return_value = {
         "cutover_startdate": "2021-12-02T00:00:00+00:00",
         "cutover_enddate": "2021-12-06T00:00:00+00:00",
@@ -439,11 +418,8 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_correct_stats_per
 
 def test_calculate_dashboard_metrics_from_telemetry_returns_correct_stats_per_supplier_combination(
         mock_defaults,
-        occurrences_mock,
         upload_migrations_mock,
         calculate_migrations_stats_per_supplier_combination_mock):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
     calculate_migrations_stats_per_supplier_combination_mock.return_value = [{
         "source_system": "source-system",
         "target_system": "target-system",
@@ -461,7 +437,8 @@ def test_calculate_dashboard_metrics_from_telemetry_returns_correct_stats_per_su
     upload_migrations_mock.assert_called_once_with(ANY, expected_migrations)
 
 
-def test_export_splunk_data_runs_without_any_occurrences_data(mock_defaults):
+def test_export_splunk_data_runs_without_any_occurrences_data(mock_defaults, occurrences_mock):
+    occurrences_mock.return_value = []
     result = export_splunk_data({}, {})
 
     assert result == "ok"
@@ -472,8 +449,6 @@ def test_export_splunk_data_gets_asids_for_ods_code_in_occurrences_data(
         occurrences_mock,
         lookup_all_asids_mock,
         exporter_lambda_env_vars):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
 
@@ -489,13 +464,8 @@ def test_export_splunk_data_skips_migrations_with_missing_asids(
         occurrences_mock,
         lookup_all_asids_mock,
         calculate_baseline_date_range_mock):
-    migration_occurrence_1 = aMigrationOccurrence()
-    migration_occurrence_2 = {
-        "ods_code": "B22222",
-        "ccg_name": "",
-        "practice_name": "",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence_1 = aMigrationOccurrence("A32323", "First CCG", "First Surgery")
+    migration_occurrence_2 = aMigrationOccurrence("B22222", "Second CCG", "Second Surgery")
     occurrences_mock.return_value = [migration_occurrence_1, migration_occurrence_2]
     lookup_all_asids_mock.return_value = {
         migration_occurrence_1["ods_code"]: anAsidPair("", "", "", ""),
@@ -512,13 +482,8 @@ def test_export_splunk_data_skips_migrations_with_missing_baseline_telemetry(
         occurrences_mock,
         lookup_all_asids_mock,
         get_baseline_telemetry_from_splunk_mock):
-    migration_occurrence_1 = aMigrationOccurrence()
-    migration_occurrence_2 = {
-        "ods_code": "B22222",
-        "ccg_name": "",
-        "practice_name": "",
-        "date": date(2021, 7, 11)
-    }
+    migration_occurrence_1 = aMigrationOccurrence("A32323", "First CCG", "First Surgery")
+    migration_occurrence_2 = aMigrationOccurrence("B22222", "Second CCG", "Second Surgery")
     occurrences_mock.return_value = [migration_occurrence_1, migration_occurrence_2]
     lookup_all_asids_mock.return_value = {
         migration_occurrence_1["ods_code"]: anAsidPair("12345", "098765"),
@@ -540,10 +505,8 @@ def test_export_splunk_data_skips_migrations_with_missing_baseline_telemetry(
 
 def test_export_splunk_data_gets_baseline_date_range(
         mock_defaults,
-        occurrences_mock,
         calculate_baseline_date_range_mock):
     migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
 
@@ -553,10 +516,8 @@ def test_export_splunk_data_gets_baseline_date_range(
 
 def test_export_splunk_data_gets_pre_cutover_date_range(
         mock_defaults,
-        occurrences_mock,
         calculate_pre_cutover_date_range_mock):
     migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
 
@@ -566,10 +527,8 @@ def test_export_splunk_data_gets_pre_cutover_date_range(
 
 def test_export_splunk_data_gets_post_cutover_date_range(
         mock_defaults,
-        occurrences_mock,
         calculate_post_cutover_date_range_mock):
     migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
 
@@ -590,10 +549,7 @@ def test_export_splunk_data_does_not_get_splunk_api_token_when_there_are_no_migr
 
 def test_export_splunk_data_gets_splunk_api_token(
         mock_defaults,
-        occurrences_mock,
         get_splunk_api_token_mock):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
 
     export_splunk_data({}, {})
 
@@ -605,11 +561,7 @@ def test_export_splunk_data_gets_splunk_api_token(
 
 def test_export_splunk_data_gets_splunk_api_token_once_regardless_of_number_of_migration_occurrences(
         mock_defaults,
-        occurrences_mock,
         get_splunk_api_token_mock):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [
-        migration_occurrence, migration_occurrence]
 
     export_splunk_data({}, {})
 
@@ -618,12 +570,10 @@ def test_export_splunk_data_gets_splunk_api_token_once_regardless_of_number_of_m
 
 def test_export_splunk_data_checks_for_existing_telemetry_files(
         mock_defaults,
-        occurrences_mock,
         objects_exist_mock,
+        occurrences_mock,
         lookup_all_asids_mock,
         exporter_lambda_env_vars):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
     lookup_all_asids_mock.return_value = {
         ods_code: anAsidPair()
@@ -642,13 +592,9 @@ def test_export_splunk_data_checks_for_existing_telemetry_files(
 
 def test_export_splunk_data_does_not_export_duplicate_telemetry_data(
         mock_defaults,
-        occurrences_mock,
         objects_exist_mock,
         get_baseline_telemetry_from_splunk_mock,
-        parse_threshold_from_telemetry_mock,
         get_telemetry_from_splunk_mock):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
     objects_exist_mock.return_value = True
 
     export_splunk_data({}, {})
@@ -659,14 +605,12 @@ def test_export_splunk_data_does_not_export_duplicate_telemetry_data(
 
 def test_export_splunk_data_queries_splunk_for_baseline_telemetry(
         mock_defaults,
-        occurrences_mock,
         calculate_baseline_date_range_mock,
+        occurrences_mock,
         lookup_all_asids_mock,
         exporter_lambda_env_vars,
         get_splunk_api_token_mock,
         get_baseline_telemetry_from_splunk_mock):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
     lookup_all_asids_mock.return_value = {
         ods_code: anAsidPair()
@@ -683,12 +627,8 @@ def test_export_splunk_data_queries_splunk_for_baseline_telemetry(
 
 def test_export_splunk_data_parses_baseline_threshold_from_telemetry(
         mock_defaults,
-        occurrences_mock,
         parse_threshold_from_telemetry_mock,
         get_baseline_telemetry_from_splunk_mock):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
-
     export_splunk_data({}, {})
 
     expected_telemetry = get_baseline_telemetry_from_splunk_mock.return_value
@@ -705,8 +645,6 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
         get_splunk_api_token_mock,
         parse_threshold_from_telemetry_mock,
         get_telemetry_from_splunk_mock):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
     lookup_all_asids_mock.return_value = {
         ods_code: anAsidPair()
@@ -738,8 +676,6 @@ def test_export_splunk_data_uploads_baseline_telemetry_to_s3(
         exporter_lambda_env_vars,
         get_baseline_telemetry_from_splunk_mock,
         calculate_baseline_date_range_mock):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
     lookup_all_asids_mock.return_value = {
         ods_code: anAsidPair()
@@ -766,8 +702,6 @@ def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
         get_telemetry_from_splunk_mock,
         calculate_pre_cutover_date_range_mock,
         calculate_post_cutover_date_range_mock):
-    migration_occurrence = aMigrationOccurrence()
-    occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
     lookup_all_asids_mock.return_value = {
         ods_code: anAsidPair()
@@ -797,12 +731,12 @@ def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
     )
 
 
-def aMigrationOccurrence():
+def aMigrationOccurrence(ods_code="A32323", ccg_name="Test CCG", practice_name="Test Surgery", migration_date=date(2021, 7, 11)):
     return {
-        "ods_code": "A32323",
-        "ccg_name": "Test CCG",
-        "practice_name": "Test Surgery",
-        "date": date(2021, 7, 11)
+        "ods_code": ods_code,
+        "ccg_name": ccg_name,
+        "practice_name": practice_name,
+        "date": migration_date
     }
 
 
