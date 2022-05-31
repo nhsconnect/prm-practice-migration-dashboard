@@ -1,6 +1,8 @@
+import logging
 from chalicelib.csv_rows import csv_rows
 from chalicelib.migration_occurrences import EMIS_PRODUCT_ID, TPP_PRODUCT_ID, VISION_PRODUCT_ID
 
+logger = logging.getLogger("Metrics Calculator")
 
 class AsidLookupError(Exception):
     pass
@@ -17,6 +19,7 @@ def lookup_all_asids(s3, bucket_name, migrations):
     asid_lookup_bucket = s3.Bucket(bucket_name)
     list_of_migrations = list(migrations)
     for lookup_file in asid_lookup_bucket.objects.all():
+        logger.debug(f"Opened file {lookup_file.key}")
         rows = list(csv_rows(lookup_file.get()["Body"]))
         for migration in list(list_of_migrations):
             ods_code = migration["ods_code"]
@@ -27,6 +30,7 @@ def lookup_all_asids(s3, bucket_name, migrations):
             result[ods_code] |= current_file_result
             if result[ods_code]["old"]["asid"] and result[ods_code]["new"]["asid"]:
                 list_of_migrations.remove(migration)
+        logger.debug(f"Closed file {lookup_file.key}")
     if len(result) == 0:
         raise AsidLookupError(f"Bucket {bucket_name} is empty")
 
