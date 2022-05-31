@@ -1,15 +1,17 @@
-from datetime import date, timedelta
+import json
 import os
+from datetime import date, timedelta
 from functools import reduce
 from itertools import chain
-import json
-import pytest
-
 from unittest.mock import ANY, Mock
+
+import pytest
 
 from app import calculate_dashboard_metrics_from_telemetry, export_splunk_data
 from chalicelib.get_data_from_splunk import SplunkTelemetryMissing
-from chalicelib.lookup_asids import AsidLookupError
+
+NEW_ASID = "09876"
+OLD_ASID = "12345"
 
 
 def new_telemetry_generator():
@@ -269,14 +271,8 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures
     occurrences_mock.return_value = [
         migration_occurrence_1, migration_occurrence_2]
     lookup_all_asids_mock.return_value = {
-        migration_occurrence_1["ods_code"]: {
-            "old": {"asid": "", "name": ""},
-            "new": {"asid": "", "name": ""}
-        },
-        migration_occurrence_2["ods_code"]: {
-            "old": {"asid": "12345", "name": "EMIS Web"},
-            "new": {"asid": "09876", "name": "SystmOne"}
-        }
+        migration_occurrence_1["ods_code"]: anAsidPair("", "", "", ""),
+        migration_occurrence_2["ods_code"]: anAsidPair()
     }
 
     calculate_dashboard_metrics_from_telemetry({}, {})
@@ -324,14 +320,8 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multipl
     occurrences_mock.return_value = [
         migration_occurrence_1, migration_occurrence_2]
     lookup_all_asids_mock.return_value = {
-        migration_occurrence_1["ods_code"]: {
-            "old": {"asid": "12345", "name": "EMIS Web"},
-            "new": {"asid": "09876", "name": "SystmOne"}
-        },
-        migration_occurrence_2["ods_code"]: {
-            "old": {"asid": "13579", "name": "EMIS Web"},
-            "new": {"asid": "08642", "name": "SystmOne"}
-        }
+        migration_occurrence_1["ods_code"]: anAsidPair("12345", "098765"),
+        migration_occurrence_2["ods_code"]: anAsidPair("13579", "08642")
     }
     telemetry_mock.side_effect = [
         old_telemetry_generator(), new_telemetry_generator(),
@@ -390,8 +380,7 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_average_cutover_d
     occurrences_mock.return_value = map(
         lambda x: {"ods_code": "A32323", "ccg_name": "", "practice_name": ""}, durations)
     asids_array = map(
-        lambda x: {"A32323": {"old": {"asid": "12345", "name": ""},
-                              "new": {"asid": "09876", "name": ""}}}, durations)
+        lambda x: {"A32323": anAsidPair()}, durations)
     lookup_all_asids_mock.return_value = reduce(lambda a, b: a | b, asids_array)
     # The use of chain here is inspired by the answer to this Stack Overflow question:
     # https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-a-list-of-lists
@@ -509,14 +498,8 @@ def test_export_splunk_data_skips_migrations_with_missing_asids(
     }
     occurrences_mock.return_value = [migration_occurrence_1, migration_occurrence_2]
     lookup_all_asids_mock.return_value = {
-        migration_occurrence_1["ods_code"]: {
-            "old": {"asid": "", "name": ""},
-            "new": {"asid": "", "name": ""}
-        },
-        migration_occurrence_2["ods_code"]: {
-            "old": {"asid": "13579", "name": "EMIS Web"},
-            "new": {"asid": "08642", "name": "SystmOne"}
-        }
+        migration_occurrence_1["ods_code"]: anAsidPair("", "", "", ""),
+        migration_occurrence_2["ods_code"]: anAsidPair()
     }
 
     export_splunk_data({}, {})
@@ -538,14 +521,8 @@ def test_export_splunk_data_skips_migrations_with_missing_baseline_telemetry(
     }
     occurrences_mock.return_value = [migration_occurrence_1, migration_occurrence_2]
     lookup_all_asids_mock.return_value = {
-        migration_occurrence_1["ods_code"]: {
-            "old": {"asid": "12345", "name": "EMIS Web"},
-            "new": {"asid": "09876", "name": "SystmOne"}
-        },
-        migration_occurrence_2["ods_code"]: {
-            "old": {"asid": "13579", "name": "EMIS Web"},
-            "new": {"asid": "08642", "name": "SystmOne"}
-        }
+        migration_occurrence_1["ods_code"]: anAsidPair("12345", "098765"),
+        migration_occurrence_2["ods_code"]: anAsidPair("13579", "08642")
     }
 
     def fail_on_first_lookup(splunk_host, splunk_token, old_asid, baseline_date_range):
@@ -648,17 +625,12 @@ def test_export_splunk_data_checks_for_existing_telemetry_files(
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
-    old_asid = "12345"
-    new_asid = "09876"
     lookup_all_asids_mock.return_value = {
-        ods_code: {
-            "old": {"asid": old_asid, "name": "EMIS Web"},
-            "new": {"asid": new_asid, "name": "SystmOne"}
-        }
+        ods_code: anAsidPair()
     }
-    baseline_telemetry_filename = f"{old_asid}-baseline-telemetry.csv.gz"
-    pre_cutover_telemetry_filename = f"{old_asid}-telemetry.csv.gz"
-    post_cutover_telemetry_filename = f"{new_asid}-telemetry.csv.gz"
+    baseline_telemetry_filename = f"{OLD_ASID}-baseline-telemetry.csv.gz"
+    pre_cutover_telemetry_filename = f"{OLD_ASID}-telemetry.csv.gz"
+    post_cutover_telemetry_filename = f"{NEW_ASID}-telemetry.csv.gz"
 
     export_splunk_data({}, {})
 
@@ -696,13 +668,8 @@ def test_export_splunk_data_queries_splunk_for_baseline_telemetry(
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
-    old_asid = "12345"
-    new_asid = "09876"
     lookup_all_asids_mock.return_value = {
-        ods_code: {
-            "old": {"asid": old_asid, "name": "EMIS Web"},
-            "new": {"asid": new_asid, "name": "SystmOne"}
-        }
+        ods_code: anAsidPair()
     }
 
     export_splunk_data({}, {})
@@ -710,7 +677,7 @@ def test_export_splunk_data_queries_splunk_for_baseline_telemetry(
     get_baseline_telemetry_from_splunk_mock.assert_called_once_with(
         exporter_lambda_env_vars["SPLUNK_HOST"],
         get_splunk_api_token_mock.return_value,
-        old_asid,
+        OLD_ASID,
         calculate_baseline_date_range_mock.return_value)
 
 
@@ -741,13 +708,8 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
-    old_asid = "12345"
-    new_asid = "09876"
     lookup_all_asids_mock.return_value = {
-        ods_code: {
-            "old": {"asid": old_asid, "name": "EMIS Web"},
-            "new": {"asid": new_asid, "name": "SystmOne"}
-        }
+        ods_code: anAsidPair()
     }
     baseline_threshold = "10"
     parse_threshold_from_telemetry_mock.return_value = baseline_threshold
@@ -757,13 +719,13 @@ def test_export_splunk_data_queries_splunk_data_using_baseline_threshold(
     get_telemetry_from_splunk_mock.assert_any_call(
         exporter_lambda_env_vars["SPLUNK_HOST"],
         get_splunk_api_token_mock.return_value,
-        old_asid,
+        OLD_ASID,
         calculate_pre_cutover_date_range_mock.return_value,
         baseline_threshold)
     get_telemetry_from_splunk_mock.assert_any_call(
         exporter_lambda_env_vars["SPLUNK_HOST"],
         get_splunk_api_token_mock.return_value,
-        new_asid,
+        NEW_ASID,
         calculate_post_cutover_date_range_mock.return_value,
         baseline_threshold)
 
@@ -779,13 +741,8 @@ def test_export_splunk_data_uploads_baseline_telemetry_to_s3(
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
-    old_asid = "12345"
-    new_asid = "09876"
     lookup_all_asids_mock.return_value = {
-        ods_code: {
-            "old": {"asid": old_asid, "name": "EMIS Web"},
-            "new": {"asid": new_asid, "name": "SystmOne"}
-        }
+        ods_code: anAsidPair()
     }
 
     export_splunk_data({}, {})
@@ -794,7 +751,7 @@ def test_export_splunk_data_uploads_baseline_telemetry_to_s3(
         ANY,
         exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"],
         get_baseline_telemetry_from_splunk_mock.return_value,
-        f"{old_asid}-baseline-telemetry.csv.gz",
+        f"{OLD_ASID}-baseline-telemetry.csv.gz",
         calculate_baseline_date_range_mock.return_value["start_date"],
         calculate_baseline_date_range_mock.return_value["end_date"]
     )
@@ -812,13 +769,8 @@ def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
     migration_occurrence = aMigrationOccurrence()
     occurrences_mock.return_value = [migration_occurrence]
     ods_code = occurrences_mock.return_value[0]["ods_code"]
-    old_asid = "12345"
-    new_asid = "09876"
     lookup_all_asids_mock.return_value = {
-        ods_code: {
-            "old": {"asid": old_asid, "name": "EMIS Web"},
-            "new": {"asid": new_asid, "name": "SystmOne"}
-        }
+        ods_code: anAsidPair()
     }
     old_telemetry_data = "old"
     new_telemetry_data = "new"
@@ -831,7 +783,7 @@ def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
         ANY,
         exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"],
         old_telemetry_data,
-        f"{old_asid}-telemetry.csv.gz",
+        f"{OLD_ASID}-telemetry.csv.gz",
         calculate_pre_cutover_date_range_mock.return_value["start_date"],
         calculate_pre_cutover_date_range_mock.return_value["end_date"]
     )
@@ -839,7 +791,7 @@ def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
         ANY,
         exporter_lambda_env_vars["TELEMETRY_BUCKET_NAME"],
         new_telemetry_data,
-        f"{new_asid}-telemetry.csv.gz",
+        f"{NEW_ASID}-telemetry.csv.gz",
         calculate_post_cutover_date_range_mock.return_value["start_date"],
         calculate_post_cutover_date_range_mock.return_value["end_date"]
     )
@@ -851,4 +803,11 @@ def aMigrationOccurrence():
         "ccg_name": "Test CCG",
         "practice_name": "Test Surgery",
         "date": date(2021, 7, 11)
+    }
+
+
+def anAsidPair(new_asid=NEW_ASID, old_asid=OLD_ASID, old_system="EMIS Web", new_system="SystmOne"):
+    return {
+        "old": {"asid": old_asid, "name": old_system},
+        "new": {"asid": new_asid, "name": new_system}
     }
