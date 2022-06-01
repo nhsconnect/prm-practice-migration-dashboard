@@ -731,6 +731,29 @@ def test_export_splunk_data_uploads_cutover_telemetry_to_s3(
     )
 
 
+def test_export_splunk_data_does_not_upload_empty_cutover_telemetry_to_s3(
+        mock_defaults,
+        occurrences_mock,
+        upload_telemetry_mock,
+        lookup_all_asids_mock,
+        exporter_lambda_env_vars,
+        get_telemetry_from_splunk_mock,
+        calculate_pre_cutover_date_range_mock,
+        calculate_post_cutover_date_range_mock):
+    ods_code = occurrences_mock.return_value[0]["ods_code"]
+    lookup_all_asids_mock.return_value = {
+        ods_code: anAsidPair()
+    }
+    old_telemetry_data = b""
+    new_telemetry_data = "new"
+    get_telemetry_from_splunk_mock.side_effect = [
+        old_telemetry_data, new_telemetry_data]
+
+    export_splunk_data({}, {})
+
+    upload_telemetry_mock.assert_not_called()
+
+
 def aMigrationOccurrence(ods_code="A32323", ccg_name="Test CCG", practice_name="Test Surgery", migration_date=date(2021, 7, 11)):
     return {
         "ods_code": ods_code,
