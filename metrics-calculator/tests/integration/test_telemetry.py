@@ -7,7 +7,7 @@ from datetime import date
 from moto import mock_s3
 
 from chalicelib.s3 import read_object_s3, _object_from_uri
-from chalicelib.telemetry import upload_telemetry
+from chalicelib.telemetry import upload_telemetry, GetTelemetryError, get_telemetry
 
 
 @pytest.fixture(scope='function')
@@ -24,6 +24,15 @@ def aws_credentials():
 def s3(aws_credentials):
     with mock_s3():
         yield boto3.resource('s3', region_name='us-east-1')
+
+
+def test_get_telemetry_raises_error_when_no_telemetry_found(s3):
+    bucket_name = "bucket-name"
+    filename = "telemetry-file"
+    s3.create_bucket(Bucket=bucket_name)
+
+    with pytest.raises(GetTelemetryError):
+        get_telemetry(s3, bucket_name, filename)
 
 
 def test_upload_telemetry_uploads_zipped_telemetry(s3):

@@ -15,7 +15,7 @@ from chalicelib.metrics_engine import calculate_cutover_start_and_end_date, \
     calculate_migrations_stats_per_supplier_combination
 from chalicelib.migration_occurrences import get_migration_occurrences
 from chalicelib.s3 import get_s3_resource, write_object_s3, objects_exist
-from chalicelib.telemetry import get_telemetry, upload_telemetry
+from chalicelib.telemetry import get_telemetry, upload_telemetry, GetTelemetryError
 from chalicelib.calculate_date_range import calculate_baseline_date_range, calculate_pre_cutover_date_range, \
     calculate_post_cutover_date_range
 
@@ -66,6 +66,8 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
             metrics.append(migration_metrics | org_details | system_details)
         except AsidLookupError:
             logging.error("Couldn't find ASIDs for migration", exc_info=True)
+        except GetTelemetryError:
+            logging.error("Couldn't get telemetry for migration", exc_info=True)
 
     if len(metrics) > 0:
         mean_cutover = calculate_mean_cutover(metrics)
