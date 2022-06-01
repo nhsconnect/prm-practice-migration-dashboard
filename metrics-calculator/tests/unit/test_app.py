@@ -9,6 +9,7 @@ import pytest
 
 from app import calculate_dashboard_metrics_from_telemetry, export_splunk_data
 from chalicelib.get_data_from_splunk import SplunkTelemetryMissing
+from chalicelib.telemetry import GetTelemetryError
 
 NEW_ASID = "09876"
 OLD_ASID = "12345"
@@ -265,6 +266,7 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures
         migration_occurrence_2["ods_code"]: anAsidPair()
     }
 
+
     calculate_dashboard_metrics_from_telemetry({}, {})
 
     upload_migrations_mock.assert_called_once_with(
@@ -289,6 +291,51 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures
             }]
         })
 
+
+def test_calculate_dashboard_metrics_from_telemetry_ignores_migrations_with_missing_telemetry(
+        mock_defaults,
+        occurrences_mock,
+        lookup_all_asids_mock,
+        telemetry_mock,
+        upload_migrations_mock):
+    migration_occurrence_1 = aMigrationOccurrence("A11111")
+    migration_occurrence_2 = aMigrationOccurrence("B22222", "CCG Name", "Practice Name")
+    occurrences_mock.return_value = [
+        migration_occurrence_1, migration_occurrence_2]
+    lookup_all_asids_mock.return_value = {
+        migration_occurrence_1["ods_code"]: anAsidPair("12345", "098765"),
+        migration_occurrence_2["ods_code"]: anAsidPair("13579", "08642")
+    }
+
+    def fail_on_first_occurrence(s3, telemetry_bucket_name, old_telemetry_object_name):
+        if old_telemetry_object_name == "12345-telemetry.csv.gz":
+            raise GetTelemetryError("Error!")
+        return [old_telemetry_generator(), new_telemetry_generator()]
+    telemetry_mock.side_effect = fail_on_first_occurrence
+
+    calculate_dashboard_metrics_from_telemetry({}, {})
+
+    upload_migrations_mock.assert_called_once_with(
+        ANY,
+        {
+            "mean_cutover_duration": 1.0,
+            "supplier_combination_stats": [{
+                "source_system": ANY,
+                "target_system": ANY,
+                "count": ANY,
+                "mean_duration": ANY
+            }],
+            "migrations": [{
+                "cutover_startdate": ANY,
+                "cutover_enddate": ANY,
+                "practice_name": ANY,
+                "ccg_name": ANY,
+                "ods_code": ANY,
+                "source_system": ANY,
+                "target_system": ANY,
+                "cutover_duration": ANY
+            }]
+        })
 
 def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multiple_migrations(
         mock_defaults,
