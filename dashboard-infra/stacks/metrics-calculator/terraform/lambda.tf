@@ -20,6 +20,7 @@ resource "aws_lambda_function" "metrics_calculator_function" {
       METRICS_BUCKET_NAME     = var.metrics_bucket_name
       OCCURRENCES_BUCKET_NAME = var.migration_occurrences_bucket_name
       TELEMETRY_BUCKET_NAME   = var.telemetry_bucket_name
+      PATIENT_REGISTRATIONS_BUCKET_NAME   = var.patient_registrations_bucket_name
     }
   }
 }
@@ -151,6 +152,18 @@ resource "aws_iam_policy" "metrics_calculator_function_policy" {
       "Effect": "Allow",
       "Action": "s3:PutObject",
       "Resource": "arn:aws:s3:::${var.metrics_bucket_name}/*"
+    },
+    {
+      "Sid": "AllowReadPatientRegistrationsBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::${var.patient_registrations_bucket_name}"
+    },
+    {
+      "Sid": "AllowReadPatientRegistrationsObjects",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::${var.patient_registrations_bucket_name}/*"
     }
   ]
 }
