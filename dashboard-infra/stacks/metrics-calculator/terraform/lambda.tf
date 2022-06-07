@@ -4,6 +4,7 @@ resource "aws_lambda_function" "metrics_calculator_function" {
   handler       = var.metrics_calculator_handler_name
   timeout       = 900
   runtime       = "python3.9"
+  reserved_concurrent_executions = 1
 
   vpc_config {
     security_group_ids = [aws_security_group.lambda_sg.id]
@@ -29,6 +30,7 @@ resource "aws_lambda_function" "splunk_data_exporter_function" {
   handler       = var.splunk_data_exporter_handler_name
   timeout       = 900
   runtime       = "python3.9"
+  reserved_concurrent_executions = 1
 
   vpc_config {
     security_group_ids = [aws_security_group.lambda_sg.id]
