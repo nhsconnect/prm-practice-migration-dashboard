@@ -189,6 +189,8 @@ def export_data_for_migration(migration, s3, asids_lookup, telemetry_bucket_name
             post_cutover_date_range['start_date'],
             post_cutover_date_range['end_date'])
         logger.debug("Files successfully uploaded")
+    else:
+        logger.debug(f"No telemetry files uploaded for {ods_code}")
 
 
 def get_ssm_client():
