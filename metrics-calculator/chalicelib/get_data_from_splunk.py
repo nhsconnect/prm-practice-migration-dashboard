@@ -1,4 +1,5 @@
 import csv
+import logging
 from http.client import HTTPSConnection
 import urllib.parse
 
@@ -15,6 +16,9 @@ class SplunkTelemetryMissing(Exception):
     pass
 
 
+logger = logging.getLogger("Metrics Calculator")
+
+
 def get_telemetry_from_splunk(splunk_host, token, asid, date_range, baseline_threshold):
     search_text = f"""search index="spine2vfmmonitor" messageSender={asid}
 | timechart span=1d count
@@ -26,6 +30,10 @@ def get_telemetry_from_splunk(splunk_host, token, asid, date_range, baseline_thr
 | convert timeformat="%Y-%m-%dT%H:%M:%S" ctime(_time)"""
     telemetry = make_splunk_request(
         splunk_host, token, date_range, search_text)
+    if not telemetry:
+        logger.debug("Retrying splunk query")
+        telemetry = make_splunk_request(
+            splunk_host, token, date_range, search_text)
     return telemetry
 
 
@@ -42,6 +50,10 @@ def get_baseline_telemetry_from_splunk(splunk_host, token, asid, baseline_date_r
 | convert timeformat="%Y-%m-%dT%H:%M:%S" ctime(_time)"""
     telemetry = make_splunk_request(
         splunk_host, token, baseline_date_range, search_text)
+    if not telemetry:
+        logger.debug("Retrying splunk query")
+        telemetry = make_splunk_request(
+            splunk_host, token, baseline_date_range, search_text)
     return telemetry
 
 

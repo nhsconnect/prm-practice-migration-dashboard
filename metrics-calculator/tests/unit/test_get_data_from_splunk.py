@@ -108,12 +108,45 @@ def test_get_baseline_telemetry_from_splunk_makes_correct_request(splunk_request
         "POST", "/services/search/jobs/export", expected_request_body, expected_headers)
 
 
+def test_get_baseline_telemetry_from_splunk_makes_request_twice_if_empty_telemetry_is_returned_first(splunk_response):
+    expected_telemetry = b"""_time",count,avgmin2std
+"2021-09-06T00:00:00.000+0000",2,"4537.33933970307"""
+    splunk_response.side_effect = [
+        Mock(
+            read=lambda: b"", status=200),
+        Mock(
+            read=lambda: expected_telemetry, status=200)
+    ]
+
+    telemetry = get_baseline_telemetry_from_splunk(
+        "", anApiToken(), anAsid(), aDateRange())
+
+    assert telemetry == expected_telemetry
+
+
 def test_get_telemetry_from_splunk_get_cutover_telemetry(splunk_response):
     threshold = "4537.33933970307"
     expected_telemetry = b"""_time",count,avgmin2std
 "2021-09-06T00:00:00.000+0000",2,"4537.33933970307"""
     splunk_response.return_value = Mock(
         read=lambda: expected_telemetry, status=200)
+
+    telemetry = get_telemetry_from_splunk(
+        "", anApiToken(), anAsid(), aDateRange(), threshold)
+
+    assert telemetry == expected_telemetry
+
+
+def test_get_telemetry_makes_request_twice_if_empty_telemetry_is_returned_first(splunk_response):
+    threshold = "4537.33933970307"
+    expected_telemetry = b"""_time",count,avgmin2std
+"2021-09-06T00:00:00.000+0000",2,"4537.33933970307"""
+    splunk_response.side_effect = [
+        Mock(
+            read=lambda: b"", status=200),
+        Mock(
+            read=lambda: expected_telemetry, status=200)
+    ]
 
     telemetry = get_telemetry_from_splunk(
         "", anApiToken(), anAsid(), aDateRange(), threshold)
