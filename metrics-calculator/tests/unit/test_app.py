@@ -10,6 +10,7 @@ import pytest
 from app import calculate_dashboard_metrics_from_telemetry, export_splunk_data
 from chalicelib.get_data_from_splunk import SplunkTelemetryMissing
 from chalicelib.telemetry import GetTelemetryError
+from anys import AnyWithEntries
 
 NEW_ASID = "09876"
 OLD_ASID = "12345"
@@ -239,16 +240,11 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_practice_details_fr
         {
             "mean_cutover_duration": ANY,
             "supplier_combination_stats": ANY,
-            "migrations": [{
-                "cutover_startdate": ANY,
-                "cutover_enddate": ANY,
+            "migrations": [AnyWithEntries({
                 "practice_name": migration_occurrence["practice_name"],
                 "ccg_name": migration_occurrence["ccg_name"],
-                "ods_code": migration_occurrence["ods_code"],
-                "source_system": ANY,
-                "target_system": ANY,
-                "cutover_duration": ANY
-            }]
+                "ods_code": migration_occurrence["ods_code"]
+            })]
         })
 
 
@@ -279,16 +275,11 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_asid_lookup_failures
                 "count": ANY,
                 "mean_duration": ANY
             }],
-            "migrations": [{
-                "cutover_startdate": ANY,
-                "cutover_enddate": ANY,
-                "practice_name": ANY,
-                "ccg_name": ANY,
-                "ods_code": ANY,
-                "source_system": ANY,
-                "target_system": ANY,
-                "cutover_duration": ANY
-            }]
+            "migrations": [AnyWithEntries({
+                "practice_name": migration_occurrence_2["practice_name"],
+                "ccg_name": migration_occurrence_2["ccg_name"],
+                "ods_code": migration_occurrence_2["ods_code"]
+            })]
         })
 
 
@@ -325,16 +316,11 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_migrations_with_miss
                 "count": ANY,
                 "mean_duration": ANY
             }],
-            "migrations": [{
-                "cutover_startdate": ANY,
-                "cutover_enddate": ANY,
-                "practice_name": ANY,
-                "ccg_name": ANY,
-                "ods_code": ANY,
-                "source_system": ANY,
-                "target_system": ANY,
-                "cutover_duration": ANY
-            }]
+            "migrations": [AnyWithEntries({
+                "practice_name": migration_occurrence_2["practice_name"],
+                "ccg_name": migration_occurrence_2["ccg_name"],
+                "ods_code": migration_occurrence_2["ods_code"]
+            })]
         })
 
 def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multiple_migrations(
@@ -362,27 +348,16 @@ def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multipl
         {
             "mean_cutover_duration": ANY,
             "supplier_combination_stats": ANY,
-            "migrations": [
-                {
-                    "cutover_startdate": ANY,
-                    "cutover_enddate": ANY,
-                    "practice_name": migration_occurrence_1["practice_name"],
-                    "ccg_name": migration_occurrence_1["ccg_name"],
-                    "ods_code": migration_occurrence_1["ods_code"],
-                    "source_system": ANY,
-                    "target_system": ANY,
-                    "cutover_duration": ANY
-                },
-                {
-                    "cutover_startdate": ANY,
-                    "cutover_enddate": ANY,
+            "migrations": [AnyWithEntries({
+                "practice_name": migration_occurrence_1["practice_name"],
+                "ccg_name": migration_occurrence_1["ccg_name"],
+                "ods_code": migration_occurrence_1["ods_code"]
+            }),
+                AnyWithEntries({
                     "practice_name": migration_occurrence_2["practice_name"],
                     "ccg_name": migration_occurrence_2["ccg_name"],
-                    "ods_code": migration_occurrence_2["ods_code"],
-                    "source_system": ANY,
-                    "target_system": ANY,
-                    "cutover_duration": ANY
-                }]
+                    "ods_code": migration_occurrence_2["ods_code"]
+                })]
         })
 
 
