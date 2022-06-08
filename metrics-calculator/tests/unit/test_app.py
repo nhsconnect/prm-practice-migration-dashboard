@@ -164,6 +164,14 @@ def engine_mock(monkeypatch):
 
 
 @pytest.fixture
+def get_patient_registration_count_mock(monkeypatch):
+    mock = Mock()
+    mock.return_value = 100
+    monkeypatch.setattr("app.get_patient_registration_count", mock)
+    yield mock
+
+
+@pytest.fixture
 def calculate_migrations_stats_per_supplier_combination_mock(monkeypatch):
     mock = Mock()
     monkeypatch.setattr("app.calculate_migrations_stats_per_supplier_combination", mock)
@@ -194,6 +202,7 @@ def mock_defaults(
         get_baseline_telemetry_from_splunk_mock,
         objects_exist_mock,
         engine_mock,
+        get_patient_registration_count_mock,
         upload_migrations_mock):
     pass
 
@@ -323,6 +332,7 @@ def test_calculate_dashboard_metrics_from_telemetry_ignores_migrations_with_miss
             })]
         })
 
+
 def test_calculate_dashboard_metrics_from_telemetry_includes_metrics_for_multiple_migrations(
         mock_defaults,
         occurrences_mock,
@@ -403,11 +413,41 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_average_cutover_d
         })
 
 
+def test_calculate_dashboard_metrics_from_telemetry_retrieves_number_of_registered_patients(
+        mock_defaults,
+        get_patient_registration_count_mock):
+
+    calculate_dashboard_metrics_from_telemetry({}, {})
+
+    get_patient_registration_count_mock.assert_called_once()
+
+
+def test_calculate_dashboard_metrics_from_telemetry_uploads_number_of_registered_patients_per_practice(
+        mock_defaults,
+        get_patient_registration_count_mock,
+        upload_migrations_mock):
+
+    get_patient_registration_count_mock.return_value = 100
+
+    calculate_dashboard_metrics_from_telemetry({}, {})
+
+    upload_migrations_mock.assert_called_once_with(
+        ANY,
+        {
+            "mean_cutover_duration": ANY,
+            "supplier_combination_stats": ANY,
+            "migrations": [AnyWithEntries({
+                "patient_registration_count": 100
+            })]
+        })
+
+
 def test_calculate_dashboard_metrics_from_telemetry_calculates_correct_stats_per_supplier_combination(
         mock_defaults,
         telemetry_mock,
         lookup_all_asids_mock,
         engine_mock,
+        get_patient_registration_count_mock,
         calculate_migrations_stats_per_supplier_combination_mock):
     migration_occurrence = aMigrationOccurrence()
     engine_mock.return_value = {
@@ -420,6 +460,7 @@ def test_calculate_dashboard_metrics_from_telemetry_calculates_correct_stats_per
         "ods_code": ods_code,
         "ccg_name": migration_occurrence["ccg_name"],
         "practice_name": migration_occurrence["practice_name"],
+        "patient_registration_count": get_patient_registration_count_mock.return_value,
     }
     system_details = {
         "source_system": lookup_all_asids_mock.return_value[ods_code]["old"]["name"],

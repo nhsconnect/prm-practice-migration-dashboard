@@ -8,6 +8,7 @@ from statistics import fmean
 
 from chalicelib.get_data_from_splunk import get_telemetry_from_splunk, get_baseline_telemetry_from_splunk, \
     parse_threshold_from_telemetry, SplunkTelemetryMissing
+from chalicelib.get_patient_registration_count import get_patient_registration_count
 from chalicelib.get_splunk_api_token import get_splunk_api_token
 from chalicelib.lookup_all_asids import lookup_all_asids
 from chalicelib.lookup_asids import AsidLookupError, lookup_asids
@@ -29,6 +30,7 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
     occurrences_bucket_name = os.environ['OCCURRENCES_BUCKET_NAME']
     asid_lookup_bucket_name = os.environ['ASID_LOOKUP_BUCKET_NAME']
     telemetry_bucket_name = os.environ['TELEMETRY_BUCKET_NAME']
+    patient_registrations_bucket_name = os.environ['PATIENT_REGISTRATIONS_BUCKET_NAME']
     s3 = get_s3_resource()
     known_migrations = get_migration_occurrences(
         s3, occurrences_bucket_name)
@@ -54,10 +56,14 @@ def calculate_dashboard_metrics_from_telemetry(event, context):
             migration_metrics = calculate_cutover_start_and_end_date(
                 old_telemetry_generator, new_telemetry_generator)
 
+            patient_registration_count = get_patient_registration_count(
+                s3, patient_registrations_bucket_name, migration)
+
             org_details = {
                 "ods_code": ods_code,
                 "ccg_name": migration["ccg_name"],
                 "practice_name": migration["practice_name"],
+                "patient_registration_count": patient_registration_count
             }
             system_details = {
                 "source_system": asid_lookup["old"]["name"],

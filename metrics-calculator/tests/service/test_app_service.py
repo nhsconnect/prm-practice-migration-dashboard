@@ -9,6 +9,8 @@ from moto import mock_s3, mock_ssm
 from unittest.mock import MagicMock, Mock
 
 from chalice.test import Client
+
+from chalicelib.get_patient_registration_count import PATIENT_REGISTRATION_DATA_LOOKUP_HEADERS
 from chalicelib.lookup_asids import ASID_LOOKUP_HEADERS
 from tests.builders.file import build_gzip_csv
 
@@ -87,6 +89,7 @@ def test_calculate_dashboard_metrics_from_telemetry(
     occurrences_bucket_name = calculator_lambda_env_vars["OCCURRENCES_BUCKET_NAME"]
     asid_lookup_bucket_name = calculator_lambda_env_vars["ASID_LOOKUP_BUCKET_NAME"]
     telemetry_bucket_name = calculator_lambda_env_vars["TELEMETRY_BUCKET_NAME"]
+    patient_registrations_bucket_name = calculator_lambda_env_vars["PATIENT_REGISTRATIONS_BUCKET_NAME"]
     metrics_bucket_name = calculator_lambda_env_vars["METRICS_BUCKET_NAME"]
     ccg = "My CCG"
     practice = "My First Surgery"
@@ -94,6 +97,7 @@ def test_calculate_dashboard_metrics_from_telemetry(
         occurrences_bucket_name, s3, ods_code, ccg, practice)
     create_asid_lookup_data(
         asid_lookup_bucket_name, s3, ods_code, old_asid, new_asid)
+    create_patient_registrations_data(patient_registrations_bucket_name, s3, ods_code)
     create_telemetry_data(telemetry_bucket_name, s3, old_asid, new_asid)
     metrics_bucket = create_metrics_bucket(metrics_bucket_name, s3)
 
@@ -118,6 +122,7 @@ def test_calculate_dashboard_metrics_from_telemetry(
             "cutover_duration": 4,
             "ccg_name": ccg,
             "practice_name": practice,
+            "patient_registration_count": 1000,
             "source_system": "SystmOne",
             "target_system": "EMIS Web",
             "ods_code": ods_code
@@ -194,6 +199,18 @@ def create_asid_lookup_data(asid_lookup_bucket_name, s3, ods_code, old_asid, new
                    "EGTON MEDICAL INFORMATION SYSTEMS LTD (EMIS)", "EMIS Web", "GP Practice", "W1F 0UR"]],
         )
     )
+
+
+def create_patient_registrations_data(patient_registrations_bucket_name, s3, ods_code):
+    patient_registrations_bucket = s3.create_bucket(Bucket=patient_registrations_bucket_name)
+
+    patient_registrations_bucket.Object("july-2021-patient-registration-data.csv.gz").put(
+        Body=build_gzip_csv(
+            header=PATIENT_REGISTRATION_DATA_LOOKUP_HEADERS,
+            rows=[
+                ["", "", "", "", "", ods_code, "", "", "", "1000"]
+            ],
+        ))
 
 
 def create_telemetry_data(bucket_name, s3, old_asid, new_asid):
