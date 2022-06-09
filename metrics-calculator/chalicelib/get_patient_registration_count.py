@@ -11,14 +11,19 @@ PATIENT_REGISTRATION_DATA_LOOKUP_HEADERS = [
 
 def get_patient_registration_count(s3, bucket_name, migration):
     ods_code = migration["ods_code"]
+    migration_date = migration["date"]
+    migration_date_as_string = migration_date.strftime("%B-%Y").lower()
     patient_registrations_bucket = s3.Bucket(bucket_name)
     patient_registration_count = 0
-    for data_file in patient_registrations_bucket.objects.all():
-        rows = list(csv_rows(data_file.get()["Body"]))
-        for row in rows:
-            if ods_code == row["CODE"]:
-                patient_registration_count = row["NUMBER_OF_PATIENTS"]
-                break
+    migration_month_data = list(
+        patient_registrations_bucket.objects.filter(Prefix=migration_date_as_string, MaxKeys=1))
+    if len(migration_month_data) == 0:
+        raise PatientRegistrationsError(f"Data for {migration_date_as_string} not found")
+    rows = list(csv_rows(migration_month_data[0].get()["Body"]))
+    for row in rows:
+        if ods_code == row["CODE"]:
+            patient_registration_count = row["NUMBER_OF_PATIENTS"]
+            break
 
     if patient_registration_count:
         return int(patient_registration_count)

@@ -204,7 +204,7 @@ def create_asid_lookup_data(asid_lookup_bucket_name, s3, ods_code, old_asid, new
 def create_patient_registrations_data(patient_registrations_bucket_name, s3, ods_code):
     patient_registrations_bucket = s3.create_bucket(Bucket=patient_registrations_bucket_name)
 
-    patient_registrations_bucket.Object("july-2021-patient-registration-data.csv.gz").put(
+    patient_registrations_bucket.Object("may-2021-patient-registration-data.csv.gz").put(
         Body=build_gzip_csv(
             header=PATIENT_REGISTRATION_DATA_LOOKUP_HEADERS,
             rows=[

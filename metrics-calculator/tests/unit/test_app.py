@@ -9,8 +9,9 @@ import pytest
 
 from app import calculate_dashboard_metrics_from_telemetry, export_splunk_data
 from chalicelib.get_data_from_splunk import SplunkTelemetryMissing
+from chalicelib.get_patient_registration_count import PatientRegistrationsError
 from chalicelib.telemetry import GetTelemetryError
-from anys import AnyWithEntries
+from anys import AnyWithEntries, Not
 
 NEW_ASID = "09876"
 OLD_ASID = "12345"
@@ -439,6 +440,26 @@ def test_calculate_dashboard_metrics_from_telemetry_uploads_number_of_registered
             "migrations": [AnyWithEntries({
                 "patient_registration_count": 100
             })]
+        })
+
+
+def test_calculate_dashboard_metrics_from_telemetry_does_not_upload_number_of_registered_patients_per_practice_if_an_error_is_raised(
+        mock_defaults,
+        get_patient_registration_count_mock,
+        upload_migrations_mock):
+
+    get_patient_registration_count_mock.side_effect = PatientRegistrationsError
+
+    calculate_dashboard_metrics_from_telemetry({}, {})
+
+    upload_migrations_mock.assert_called_once_with(
+        ANY,
+        {
+            "mean_cutover_duration": ANY,
+            "supplier_combination_stats": ANY,
+            "migrations": [Not(AnyWithEntries({
+                "patient_registrations_number": ANY
+            }))]
         })
 
 
