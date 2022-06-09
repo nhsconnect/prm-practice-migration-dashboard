@@ -51,7 +51,7 @@ export const MigrationStatsTable: FC<MigrationStatsTableProps> = ({
           <Table.Cell>
             {formatPracticeName(migration.practice_name, migration.ods_code)}
           </Table.Cell>
-          <Table.Cell>{migration.patient_registration_count ?? "—"}</Table.Cell>
+          <Table.Cell>{migration.patient_registration_count?.toLocaleString() ?? "—"}</Table.Cell>
           <Table.Cell>{migration.ccg_name}</Table.Cell>
           <Table.Cell>{migration.source_system}</Table.Cell>
           <Table.Cell>{migration.target_system}</Table.Cell>
