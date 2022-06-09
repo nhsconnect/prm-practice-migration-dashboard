@@ -18,6 +18,19 @@ const defaultMigrationStats = [
   },
 ];
 
+const missingFields = [
+  {
+    cutover_startdate: "2022-01-01T02:03:04Z",
+    cutover_enddate: "2022-01-12T04:03:02Z",
+    practice_name: "Bury",
+    ods_code: "A12345",
+    ccg_name: "Greater Manchester CCG",
+    source_system: "EMIS Web",
+    target_system: "TTP SystemOne",
+    cutover_duration: 12,
+  },
+];
+
 jest.mock("../../data/metrics/migrations.json", () => defaultMigrationStats, {
   virtual: true,
 });
@@ -45,8 +58,7 @@ it("renders a table", () => {
 });
 
 it("handles missing fields", () => {
-  const missingFields = [{}];
   render(<MigrationStatsTable migrationStats={missingFields} />);
 
-  expect(screen.queryAllByText("—")).toHaveLength(8);
+  expect(screen.queryAllByText("—")).toHaveLength(1);
 });

@@ -4,32 +4,26 @@ import { DateTime } from "luxon";
 import content from "../../data/content/migrationStatsTable.json";
 
 interface MigrationStat {
-  cutover_startdate?: string;
-  cutover_enddate?: string;
-  practice_name?: string;
+  cutover_startdate: string;
+  cutover_enddate: string;
+  practice_name: string;
   patient_registration_count?: number;
-  ods_code?: string;
-  ccg_name?: string;
-  source_system?: string;
-  target_system?: string;
-  cutover_duration?: number;
+  ods_code: string;
+  ccg_name: string;
+  source_system: string;
+  target_system: string;
+  cutover_duration: number;
 }
 
 interface MigrationStatsTableProps {
   migrationStats: MigrationStat[];
 }
 
-function formatDate(isoDateTime?: string): string {
-  if (!isoDateTime) {
-    return "—";
-  }
+function formatDate(isoDateTime: string): string {
   return DateTime.fromISO(isoDateTime).toFormat("EEE, d LLL yyyy");
 }
 
-function formatPracticeName(practice_name?: string, ods_code?: string): string {
-  if (!practice_name) {
-    return "—";
-  }
+function formatPracticeName(practice_name: string, ods_code: string): string {
   return `${practice_name} (${ods_code})`;
 }
 
@@ -58,10 +52,10 @@ export const MigrationStatsTable: FC<MigrationStatsTableProps> = ({
             {formatPracticeName(migration.practice_name, migration.ods_code)}
           </Table.Cell>
           <Table.Cell>{migration.patient_registration_count ?? "—"}</Table.Cell>
-          <Table.Cell>{migration.ccg_name ?? "—"}</Table.Cell>
-          <Table.Cell>{migration.source_system ?? "—"}</Table.Cell>
-          <Table.Cell>{migration.target_system ?? "—"}</Table.Cell>
-          <Table.Cell>{migration.cutover_duration ?? "—"}</Table.Cell>
+          <Table.Cell>{migration.ccg_name}</Table.Cell>
+          <Table.Cell>{migration.source_system}</Table.Cell>
+          <Table.Cell>{migration.target_system}</Table.Cell>
+          <Table.Cell>{migration.cutover_duration}</Table.Cell>
         </Table.Row>
       ))}
     </Table.Body>
