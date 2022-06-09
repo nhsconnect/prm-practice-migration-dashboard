@@ -10,8 +10,7 @@ from chalicelib.get_data_from_splunk import get_telemetry_from_splunk, get_basel
     parse_threshold_from_telemetry, SplunkTelemetryMissing
 from chalicelib.get_patient_registration_count import get_patient_registration_count, PatientRegistrationsError
 from chalicelib.get_splunk_api_token import get_splunk_api_token
-from chalicelib.lookup_all_asids import lookup_all_asids
-from chalicelib.lookup_asids import AsidLookupError, lookup_asids
+from chalicelib.lookup_all_asids import lookup_all_asids, AsidLookupError
 from chalicelib.metrics_engine import calculate_cutover_start_and_end_date, \
     calculate_migrations_stats_per_supplier_combination
 from chalicelib.migration_occurrences import get_migration_occurrences

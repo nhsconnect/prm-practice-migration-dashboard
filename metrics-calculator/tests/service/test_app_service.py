@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, Mock
 from chalice.test import Client
 
 from chalicelib.get_patient_registration_count import PATIENT_REGISTRATION_DATA_LOOKUP_HEADERS
-from chalicelib.lookup_asids import ASID_LOOKUP_HEADERS
+from chalicelib.lookup_all_asids import ASID_LOOKUP_HEADERS
 from tests.builders.file import build_gzip_csv
 
 

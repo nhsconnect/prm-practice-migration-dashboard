@@ -129,17 +129,6 @@ def get_telemetry_from_splunk_mock(monkeypatch):
 
 
 @pytest.fixture
-def lookup_asids_mock(monkeypatch):
-    mock = Mock()
-    mock.return_value = {
-        "old": {"asid": "12345", "name": ""},
-        "new": {"asid": "09876", "name": ""}
-    }
-    monkeypatch.setattr("app.lookup_asids", mock)
-    yield mock
-
-
-@pytest.fixture
 def lookup_all_asids_mock(monkeypatch):
     mock = Mock()
     mock.return_value = {
@@ -194,7 +183,6 @@ def mock_defaults(
         exporter_lambda_env_vars,
         telemetry_mock,
         occurrences_mock,
-        lookup_asids_mock,
         lookup_all_asids_mock,
         parse_threshold_from_telemetry_mock,
         get_splunk_api_token_mock,
@@ -229,7 +217,7 @@ def exporter_lambda_env_vars():
 
 
 def test_calculate_dashboard_metrics_from_telemetry_runs_without_any_occurrences_data(
-        mock_defaults, occurrences_mock, lookup_asids_mock):
+        mock_defaults, occurrences_mock):
 
     occurrences_mock.return_value = []
 

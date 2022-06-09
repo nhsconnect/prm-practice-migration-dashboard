@@ -4,6 +4,7 @@ from chalicelib.migration_occurrences import EMIS_PRODUCT_ID, TPP_PRODUCT_ID, VI
 
 logger = logging.getLogger("Metrics Calculator")
 
+
 class AsidLookupError(Exception):
     pass
 
