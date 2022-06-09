@@ -3,6 +3,7 @@
     "cutoverStartDate": "Cutover Start Date",
     "cutoverEndDate": "Cutover End Date",
     "practiceName": "Practice Name",
+    "patientRegistrationCount": "Patients",
     "ccgName": "CCG Name",
     "sourceSystem": "Source System",
     "targetSystem": "Target System",

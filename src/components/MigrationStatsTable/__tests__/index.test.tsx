@@ -9,6 +9,7 @@ const defaultMigrationStats = [
     cutover_startdate: "2022-01-01T02:03:04Z",
     cutover_enddate: "2022-01-12T04:03:02Z",
     practice_name: "Bury",
+    patient_registration_count: 100,
     ods_code: "A12345",
     ccg_name: "Greater Manchester CCG",
     source_system: "EMIS Web",
@@ -24,17 +25,19 @@ jest.mock("../../data/metrics/migrations.json", () => defaultMigrationStats, {
 it("renders a table", () => {
   render(<MigrationStatsTable migrationStats={defaultMigrationStats} />);
 
-  expect(screen.queryByText("Cutover Start Date")).toBeTruthy();
-  expect(screen.queryByText("Cutover End Date")).toBeTruthy();
-  expect(screen.queryByText("Practice Name")).toBeTruthy();
-  expect(screen.queryByText("CCG Name")).toBeTruthy();
-  expect(screen.queryByText("Source System")).toBeTruthy();
-  expect(screen.queryByText("Target System")).toBeTruthy();
-  expect(screen.queryByText("Cutover Duration (Days)")).toBeTruthy();
+  expect(screen.getByText("Cutover Start Date")).toBeInTheDocument();
+  expect(screen.getByText("Cutover End Date")).toBeInTheDocument();
+  expect(screen.getByText("Practice Name")).toBeInTheDocument();
+  expect(screen.getByText("Patients")).toBeInTheDocument();
+  expect(screen.getByText("CCG Name")).toBeInTheDocument();
+  expect(screen.getByText("Source System")).toBeInTheDocument();
+  expect(screen.getByText("Target System")).toBeInTheDocument();
+  expect(screen.getByText("Cutover Duration (Days)")).toBeInTheDocument();
 
   expect(screen.getByText("Sat, 1 Jan 2022")).toBeInTheDocument();
   expect(screen.getByText("Wed, 12 Jan 2022")).toBeInTheDocument();
   expect(screen.getByText("Bury (A12345)")).toBeInTheDocument();
+  expect(screen.getByText("100")).toBeInTheDocument();
   expect(screen.getByText("Greater Manchester CCG")).toBeInTheDocument();
   expect(screen.getByText("EMIS Web")).toBeInTheDocument();
   expect(screen.getByText("TTP SystemOne")).toBeInTheDocument();
@@ -45,5 +48,5 @@ it("handles missing fields", () => {
   const missingFields = [{}];
   render(<MigrationStatsTable migrationStats={missingFields} />);
 
-  expect(screen.queryAllByText("—")).toHaveLength(7);
+  expect(screen.queryAllByText("—")).toHaveLength(8);
 });

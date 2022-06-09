@@ -7,6 +7,7 @@ interface MigrationStat {
   cutover_startdate?: string;
   cutover_enddate?: string;
   practice_name?: string;
+  patient_registration_count?: number;
   ods_code?: string;
   ccg_name?: string;
   source_system?: string;
@@ -41,6 +42,7 @@ export const MigrationStatsTable: FC<MigrationStatsTableProps> = ({
         <Table.Cell>{content.headings.cutoverStartDate}</Table.Cell>
         <Table.Cell>{content.headings.cutoverEndDate}</Table.Cell>
         <Table.Cell>{content.headings.practiceName}</Table.Cell>
+        <Table.Cell>{content.headings.patientRegistrationCount}</Table.Cell>
         <Table.Cell>{content.headings.ccgName}</Table.Cell>
         <Table.Cell>{content.headings.sourceSystem}</Table.Cell>
         <Table.Cell>{content.headings.targetSystem}</Table.Cell>
@@ -55,6 +57,7 @@ export const MigrationStatsTable: FC<MigrationStatsTableProps> = ({
           <Table.Cell>
             {formatPracticeName(migration.practice_name, migration.ods_code)}
           </Table.Cell>
+          <Table.Cell>{migration.patient_registration_count ?? "—"}</Table.Cell>
           <Table.Cell>{migration.ccg_name ?? "—"}</Table.Cell>
           <Table.Cell>{migration.source_system ?? "—"}</Table.Cell>
           <Table.Cell>{migration.target_system ?? "—"}</Table.Cell>
