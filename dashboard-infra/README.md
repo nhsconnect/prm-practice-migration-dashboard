@@ -2,7 +2,7 @@
 
 ### AWS authentication
 
-Before running any operations against AWS ensure that you have [configured the command line interface](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html).
+Before running any operations against AWS, ensure that you have [configured the command line interface](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html).
 
 ### Create terraform state bucket
 
@@ -48,7 +48,7 @@ Review the expected changes that it outputs. Once satisfied with them, apply the
 ./tasks dojo-apply <stack-name> <stack-environment>
 ```
 
-- `stack-name`: the name of the stack to apply (matching one of the directories under the `stacks/`)
+- `stack-name`: the name of the stack to apply (matching one of the directories under the `stacks/` directory)
 - `stack-environment`: the name of the environment to apply the changes to.
 
 ## Troubleshooting
@@ -65,5 +65,4 @@ directory; this is a bug in Terraform
 
 ### Solution
 
-delete the .terraform directory
-
+Delete the `.terraform` directory and re-run.
