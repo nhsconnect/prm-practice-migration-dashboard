@@ -23,7 +23,7 @@ Once the metrics calculator has been built, it can be deployed by following the 
 The deployed calculator can be invoked by running:
 
 ```bash
-$ ./scripts/generate-dashboard-data.sh
+./scripts/export-splunk-data.sh
 ```
 
 This will generate the data used by the dashboard and upload it to an S3 bucket.
@@ -35,7 +35,7 @@ This will generate the data used by the dashboard and upload it to an S3 bucket.
 The required dependencies can be installed by running:
 
 ```bash
-$ npm ci
+npm ci
 ```
 
 ### Running in developer mode
@@ -43,7 +43,7 @@ $ npm ci
 To build and run the app locally in developer mode (where changes are hot-reloaded):
 
 ```bash
-$ npm run develop
+npm run develop
 ```
 
 The website can then be accessed [locally on port 8000](http://localhost:8000).
@@ -53,7 +53,7 @@ The website can then be accessed [locally on port 8000](http://localhost:8000).
 To build the app in CI (also works locally):
 
 ```bash
-$ npm build
+npm build
 ```
 
 This will first download the metrics data, and then package the files up into the `public/` directory.
@@ -61,7 +61,7 @@ This will first download the metrics data, and then package the files up into th
 To then serve the website locally:
 
 ```bash
-$ npm serve
+npm serve
 ```
 
 The website can then be accessed [locally on port 9000](http://localhost:9000).
@@ -71,7 +71,7 @@ The website can then be accessed [locally on port 9000](http://localhost:9000).
 The metrics data that the dashboard displays needs to be downloaded from an S3 bucket. There is a script that will download the metrics, assuming that you are authenticated with the Practice Migration AWS account:
 
 ```bash
-$ ./scripts/get-stubs.sh
+./scripts/get-dashboard-data.sh
 ```
 
 This will download the metrics and place them in the `src/data/metrics/` directory.

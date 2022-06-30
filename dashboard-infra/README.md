@@ -36,7 +36,7 @@ The `tasks` script can be used to execute the terraform code.
 To apply a terraform stack, first execute a "plan":
 
 ```
-$ ./tasks dojo-plan <stack-name> <stack-environment>
+./tasks dojo-plan <stack-name> <stack-environment>
 ```
 
 - `stack-name`: the name of the stack to apply (matching one of the directories under the `stacks/`)
@@ -45,7 +45,7 @@ $ ./tasks dojo-plan <stack-name> <stack-environment>
 Review the expected changes that it outputs. Once satisfied with them, apply the changes:
 
 ```
-$ ./tasks dojo-apply <stack-name> <stack-environment>
+./tasks dojo-apply <stack-name> <stack-environment>
 ```
 
 - `stack-name`: the name of the stack to apply (matching one of the directories under the `stacks/`)
