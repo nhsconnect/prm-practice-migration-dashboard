@@ -18,6 +18,21 @@ This will upload the packaged lambdas to an S3 bucket. It will also output some 
 
 Once the metrics calculator lambdas have been built, they can be deployed by following the instructions in the [README](dashboard-infra/README.md) and using "metrics-calculator" as the stack name.
 
+#### Splunk authentication
+
+To be able to make API calls to the Splunk cloud instance containing Spine data, there are a couple of steps that must be completed:
+
+- getting an IP address added to the allow list—all API requests must connect from this IP address in order to succeed
+- having an API access token generated.
+
+These can both be arranged through the NMS team.
+
+In order to facilitate the Splunk data exporter lambda making requests to Splunk from a single, allow-listed, IP address, the lambda is created within a VPC with a NAT Gateway that is assigned an Elastic IP address.
+
+![Splunk access architecture](/images/splunk-access-architecture.drawio.svg)
+
+AWS Systems Manager Parameter Store is used to store the API token that is provided by the NMS team. Parameter Store is provisioned as part of the Terraform code and a dummy value is set. This should be manually replaced with the real API token (there is a lifecycle setting specified on the token in Terraform so that it is not overwritten when Terraform is reapplied).
+
 ### Running the metrics calculator lambdas
 
 First, the Splunk data exporter lambda should be run:
