@@ -1,6 +1,12 @@
-## Package and Deploy
+The AWS lambdas in this project have been created using the [Chalice framework](https://aws.github.io/chalice/). Building the project is done using Chalice, though it is deployed using the Terraform in the [dashboard-infra directory](../dashboard-infra/).
 
-`./scripts/build-and-package.sh`
+## Building and packaging
+
+The following script will build and bundle up the lambdas into a single package, and then upload that package to an S3 bucket (that it will create if it doesn't exist). The script will then output a block of JSON that should be copied into the [Terraform vars file](../dashboard-infra/stacks/metrics-calculator/vars/dev.tfvars.json).
+
+```bash
+./scripts/build-and-package.sh
+```
 
 ## Architecture
 
