@@ -107,4 +107,4 @@ The architecture for the metrics calculator can be found in the [README](metrics
 
 The dashboard itself is a simple Gatsby website. There are no deployed environments, it is simply hosted on a developer's laptop for now.
 
-![Dashboard architecture](images/dashboard-architecture.svg)
+![Dashboard architecture](images/dashboard-architecture.drawio.svg)
