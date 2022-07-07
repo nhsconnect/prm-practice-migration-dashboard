@@ -17,7 +17,7 @@ The input data consists of four different kinds of (gzipped) CSV files:
 - Spine messages sent & received for ASIDs
 - GP practice patient registration counts.
 
-#### Migration occurrences data
+### Migration occurrences data
 
 Details about migrations that have occurred originate in exports taken from the finance system. These Excel spreadsheets contain many worksheets with mostly irrelevant data, so in order to simplify things for the metrics calculator, the data in the "Pending Act upload" (or similar—it's not entirely consistently named) worksheet is copied into a blank spreadsheet from where it can be exported in CSV format. This CSV file is then manually gzipped and uploaded to the migration occurrences S3 bucket.
 
